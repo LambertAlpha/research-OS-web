@@ -1,0 +1,426 @@
+@import "tailwindcss";
+
+:root {
+  /* 暗黑金融科技配色 */
+  --background: #050508;
+  --background-secondary: #0a0a10;
+  --foreground: #e4e4e7;
+
+  /* Cyan 科技主色 */
+  --accent-primary: #06b6d4;
+  --accent-primary-glow: rgba(6, 182, 212, 0.5);
+  --accent-secondary: #22d3ee;
+
+  /* 辅助色 */
+  --accent-purple: #a855f7;
+  --accent-green: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-red: #ef4444;
+
+  /* 表面色 */
+  --surface-1: rgba(15, 15, 25, 0.8);
+  --surface-2: rgba(25, 25, 40, 0.6);
+  --border-color: rgba(6, 182, 212, 0.15);
+  --border-hover: rgba(6, 182, 212, 0.4);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* 网格背景纹理 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 渐变光晕背景 */
+body::after {
+  content: "";
+  position: fixed;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--accent-primary), var(--accent-purple));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
+/* ==================== 卡片样式 ==================== */
+.card {
+  background: linear-gradient(135deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+  opacity: 0.5;
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow:
+    0 0 30px -10px var(--accent-primary-glow),
+    0 20px 40px -20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* 指标卡片 - 带辉光效果 */
+.metric-card {
+  background: linear-gradient(135deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+  opacity: 0.6;
+}
+
+.metric-card:hover {
+  border-color: var(--border-hover);
+  box-shadow:
+    0 0 40px -10px var(--accent-primary-glow),
+    inset 0 0 30px -15px var(--accent-primary-glow);
+}
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 20px currentColor;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #71717a;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* 区块标题 */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f4f4f5;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-color), transparent);
+  margin-left: 1rem;
+}
+
+/* 分隔线 */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+  margin: 2rem 0;
+  opacity: 0.3;
+}
+
+/* ==================== 徽章样式 ==================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 15px -5px rgba(16, 185, 129, 0.5);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 15px -5px rgba(245, 158, 11, 0.5);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 15px -5px rgba(239, 68, 68, 0.5);
+}
+
+/* ==================== 霓虹辉光效果 ==================== */
+.neon-text {
+  text-shadow:
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 40px currentColor;
+}
+
+.neon-border {
+  box-shadow:
+    0 0 10px var(--accent-primary-glow),
+    inset 0 0 10px rgba(6, 182, 212, 0.1);
+}
+
+.glow-cyan {
+  color: var(--accent-primary);
+  text-shadow: 0 0 20px var(--accent-primary-glow);
+}
+
+.glow-green {
+  color: var(--accent-green);
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.glow-amber {
+  color: var(--accent-amber);
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+}
+
+.glow-red {
+  color: var(--accent-red);
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* ==================== 按钮样式 ==================== */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-primary), #0891b2);
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px -5px var(--accent-primary-glow);
+  transform: translateY(-1px);
+}
+
+.btn-primary:hover::before {
+  transform: translateX(100%);
+}
+
+/* ==================== 输入框样式 ==================== */
+.input-dark {
+  background: var(--surface-1);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.input-dark:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 20px -5px var(--accent-primary-glow);
+}
+
+/* ==================== 动画 ==================== */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 20px var(--accent-primary-glow);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 40px var(--accent-primary-glow);
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ==================== 图表容器 ==================== */
+.chart-container {
+  background: linear-gradient(135deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-container::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+  opacity: 0.3;
+}
+
+/* ==================== 状态指示器 ==================== */
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.status-indicator::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.status-green {
+  background: var(--accent-green);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.status-amber {
+  background: var(--accent-amber);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.status-red {
+  background: var(--accent-red);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* ==================== 告警框样式 ==================== */
+.alert-card {
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid;
+}
+
+.alert-critical {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: inset 0 0 30px -15px rgba(239, 68, 68, 0.3);
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: inset 0 0 30px -15px rgba(245, 158, 11, 0.3);
+}
+
+/* 响应式隐藏网格背景（小屏幕） */
+@media (max-width: 768px) {
+  body::before {
+    background-size: 30px 30px;
+  }
+}
