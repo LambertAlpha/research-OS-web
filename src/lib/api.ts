@@ -1,6 +1,9 @@
 import type { ApiResponse, ModelOutput, MarketData } from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// 使用相对路径，让 Vercel rewrites 代理到后端
+// 本地开发时会请求 localhost:3000/api，Next.js 代理到后端
+// 生产环境请求 vercel.app/api，Vercel 代理到后端
+const API_BASE_URL = "";
 
 class ApiClient {
   private baseUrl: string;
