@@ -42,7 +42,7 @@ export function Sidebar() {
             <div className="absolute inset-0 rounded-full bg-cyan-500/15 blur-lg animate-pulse" />
           </div>
           <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-lg font-bold text-zinc-100">
               Research OS
             </h1>
             <p className="text-[10px] text-zinc-500 font-medium tracking-wider uppercase">

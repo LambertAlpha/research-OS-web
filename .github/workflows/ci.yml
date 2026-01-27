@@ -1,0 +1,65 @@
+# ============================================================
+# Research OS Web 前端 CI 配置
+# ============================================================
+#
+# 前端 CI 流程
+# 1. 安装 Bun（不是 Node.js）
+# 2. 安装依赖
+# 3. 代码检查（ESLint）
+# 4. 类型检查（TypeScript）
+# 5. 构建项目
+#
+
+name: Frontend CI
+
+# ------------------------------------------------------------
+# 触发条件
+# ------------------------------------------------------------
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# ------------------------------------------------------------
+# 作业定义
+# ------------------------------------------------------------
+jobs:
+  lint-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 步骤 1：检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 步骤 2：安装 Bun
+      # oven-sh/setup-bun 是 Bun 官方提供的 Action
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # 步骤 3：安装依赖
+      # 使用缓存加速：如果 bun.lock 没变，直接用缓存的 node_modules
+      - name: Install dependencies
+        run: bun install
+
+      # 步骤 4：代码规范检查 (ESLint)
+      - name: Lint
+        run: bun run lint
+
+      # 步骤 5：类型检查 (TypeScript)
+      # tsc --noEmit 只检查类型，不输出文件
+      - name: Type check
+        run: bunx tsc --noEmit
+
+      # 步骤 6：构建项目
+      # 验证项目能否成功构建
+      - name: Build
+        run: bun run build
+
+      # 步骤 7：构建 Docker 镜像
+      - name: Build Docker image
+        run: docker build -t research-os-frontend:ci .
