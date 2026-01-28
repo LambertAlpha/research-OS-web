@@ -5,7 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function getRiskLightColor(risk: string): string {
+export function getRiskLightColor(risk?: string | null): string {
+  if (!risk) return "#64748b";
   switch (risk.toLowerCase()) {
     case "green":
       return "#22c55e";
@@ -18,7 +19,8 @@ export function getRiskLightColor(risk: string): string {
   }
 }
 
-export function getRiskLightBg(risk: string): string {
+export function getRiskLightBg(risk?: string | null): string {
+  if (!risk) return "bg-slate-500/20";
   switch (risk.toLowerCase()) {
     case "green":
       return "bg-green-500/20";
@@ -31,7 +33,8 @@ export function getRiskLightBg(risk: string): string {
   }
 }
 
-export function getRiskLightLabel(risk: string): string {
+export function getRiskLightLabel(risk?: string | null): string {
+  if (!risk) return "未知";
   switch (risk.toLowerCase()) {
     case "green":
       return "低风险";
@@ -44,7 +47,8 @@ export function getRiskLightLabel(risk: string): string {
   }
 }
 
-export function getGateStatusColor(status: string): string {
+export function getGateStatusColor(status?: string | null): string {
+  if (!status) return "#64748b";
   switch (status.toLowerCase()) {
     case "open":
       return "#22c55e";

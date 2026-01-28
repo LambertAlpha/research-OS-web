@@ -2,12 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { Header } from "@/components/Header";
-import { MetricCard } from "@/components/MetricCard";
 import { Chart } from "@/components/Chart";
 import apiClient from "@/lib/api";
-import { getRiskLightColor, getRiskLightLabel, formatNumber } from "@/lib/utils";
+import { getRiskLightColor, getRiskLightLabel, formatNumber, cn } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
-import { Droplets, AlertTriangle, BarChart3 } from "lucide-react";
+import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, Shield } from "lucide-react";
 
 export default function LiquidityPage() {
   const [isRunning, setIsRunning] = useState(false);
@@ -21,7 +20,7 @@ export default function LiquidityPage() {
       setModelOutput(output);
 
       // 获取流动性相关数据
-      const symbols = ["WALCL", "SOFR", "IORB", "WRESBAL"];
+      const symbols = ["WALCL", "SOFR", "IORB", "WRESBAL", "RRPONTSYD", "MOVE"];
       const dataPromises = symbols.map(async (symbol) => {
         try {
           const data = await apiClient.getMarketData(symbol);
@@ -44,25 +43,28 @@ export default function LiquidityPage() {
     }
   }, []);
 
-  const riskLightColor = modelOutput
-    ? getRiskLightColor(modelOutput.risk_light)
+  // 从新的响应结构中获取流动性数据
+  const liquidity = modelOutput?.liquidity;
+
+  const riskLightColor = liquidity
+    ? getRiskLightColor(liquidity.risk_light)
     : "#52525b";
-  const riskLightLabel = modelOutput
-    ? getRiskLightLabel(modelOutput.risk_light)
+  const riskLightLabel = liquidity
+    ? getRiskLightLabel(liquidity.risk_light)
     : "未运行";
   const riskLightEmoji =
-    modelOutput?.risk_light === "green"
+    liquidity?.risk_light === "green"
       ? "🟢"
-      : modelOutput?.risk_light === "yellow"
+      : liquidity?.risk_light === "yellow"
       ? "🟡"
-      : modelOutput?.risk_light === "red"
+      : liquidity?.risk_light === "red"
       ? "🔴"
       : "⚪";
 
   const scoreColor =
-    (modelOutput?.liquidity_score ?? 0) >= 70
+    (liquidity?.liquidity_score ?? 0) >= 70
       ? "#10b981"
-      : (modelOutput?.liquidity_score ?? 0) >= 40
+      : (liquidity?.liquidity_score ?? 0) >= 40
       ? "#f59e0b"
       : "#ef4444";
 
@@ -98,10 +100,10 @@ export default function LiquidityPage() {
             <div className="p-2 rounded-lg bg-blue-500/10">
               <Droplets className="w-5 h-5 text-blue-400" />
             </div>
-            <h1 className="text-2xl font-bold text-zinc-100">流动性模型</h1>
+            <h1 className="text-2xl font-bold text-zinc-100">流动性模型 v3.0</h1>
           </div>
           <p className="text-zinc-500 text-sm ml-12">
-            美元流动性监测与风险评估
+            美元流动性监测与风险评估 - Quantity 40% + Plumbing 30% + Vol Gate 30%
           </p>
         </div>
 
@@ -120,8 +122,24 @@ export default function LiquidityPage() {
               点击「运行模型」按钮开始分析
             </p>
           </div>
-        ) : (
+        ) : liquidity ? (
           <>
+            {/* 一票否决警告 */}
+            {liquidity.hard_stop_triggered && (
+              <div className="mb-6">
+                <div className="relative rounded-xl p-4 overflow-hidden bg-red-500/20 border border-red-500/50 backdrop-blur-xl">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
+                  <div className="text-red-400 font-bold flex items-center gap-2 text-lg">
+                    <AlertCircle className="w-5 h-5" />
+                    一票否决触发
+                  </div>
+                  <div className="text-red-300 mt-2">
+                    {liquidity.hard_stop_reason || "触发强制紧缩条件"}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 核心指标卡片 */}
             <div className="grid grid-cols-3 gap-6 mb-8">
               {/* 风险灯号 */}
@@ -156,7 +174,7 @@ export default function LiquidityPage() {
                   className="text-4xl font-bold"
                   style={{ color: scoreColor, textShadow: `0 0 30px ${scoreColor}60` }}
                 >
-                  {formatNumber(modelOutput.liquidity_score)}
+                  {formatNumber(liquidity.liquidity_score)}
                   <span className="text-lg text-zinc-500">/100</span>
                 </div>
                 <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-2">
@@ -167,12 +185,18 @@ export default function LiquidityPage() {
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: `${modelOutput.liquidity_score}%`,
+                      width: `${liquidity.liquidity_score}%`,
                       backgroundColor: scoreColor,
                       boxShadow: `0 0 10px ${scoreColor}`,
                     }}
                   />
                 </div>
+                {/* Supply Texture 修正显示 */}
+                {liquidity.supply_texture_adjustment !== 0 && (
+                  <div className="text-xs text-amber-400 mt-2">
+                    Supply Texture: {liquidity.supply_texture_adjustment > 0 ? '+' : ''}{liquidity.supply_texture_adjustment}
+                  </div>
+                )}
               </div>
 
               {/* 建议杠杆 */}
@@ -182,26 +206,77 @@ export default function LiquidityPage() {
                   className="text-4xl font-bold text-cyan-400"
                   style={{ textShadow: "0 0 30px rgba(6, 182, 212, 0.6)" }}
                 >
-                  {formatNumber(modelOutput.leverage_coef, 1)}
+                  {formatNumber(liquidity.leverage_coef, 1)}
                   <span className="text-xl text-zinc-500">x</span>
                 </div>
                 <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-2">
                   建议杠杆
                 </div>
                 <div className="text-zinc-400 text-sm mt-3">
-                  {modelOutput.leverage_coef <= 0.5
+                  {liquidity.leverage_coef <= 0.5
                     ? "🛡️ 保守配置"
-                    : modelOutput.leverage_coef <= 0.8
+                    : liquidity.leverage_coef <= 0.8
                     ? "⚖️ 适度杠杆"
                     : "⚡ 激进操作"}
                 </div>
+                {/* RRP 缓冲放大器警告 */}
+                {liquidity.rrp_buffer_amplified && (
+                  <div className="text-xs text-amber-400 mt-2 flex items-center justify-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    RRP 缓冲放大
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="divider" />
 
+            {/* 分项得分 */}
+            {liquidity.component_scores && liquidity.component_scores.length > 0 && (
+              <div className="mb-8">
+                <h2 className="section-title">
+                  <BarChart3 className="w-5 h-5 text-cyan-400" />
+                  分项得分
+                </h2>
+                <div className="grid grid-cols-4 gap-4">
+                  {liquidity.component_scores.map((comp) => (
+                    <div
+                      key={comp.name}
+                      className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl"
+                    >
+                      <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                        {comp.name.replace(/_/g, ' ')}
+                      </div>
+                      <div className="text-2xl font-bold text-zinc-200">
+                        {formatNumber(comp.score)}
+                        <span className="text-sm text-zinc-500">/100</span>
+                      </div>
+                      <div className="text-sm text-zinc-400 mt-1">
+                        {comp.label}
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-1">
+                        权重: {(comp.weight * 100).toFixed(0)}%
+                      </div>
+                      {/* 迷你进度条 */}
+                      <div className="mt-2 bg-zinc-800 rounded-full h-1 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${comp.score}%`,
+                            backgroundColor: comp.score >= 70 ? '#10b981' : comp.score >= 40 ? '#f59e0b' : '#ef4444',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="divider" />
+
             {/* 禁止策略 */}
-            {modelOutput.forbidden_strategies.length > 0 && (
+            {liquidity.forbidden_strategies.length > 0 && (
               <div className="mb-8">
                 <div className="relative rounded-xl p-4 overflow-hidden bg-red-500/10 border border-red-500/30 backdrop-blur-xl">
                   <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
@@ -210,7 +285,7 @@ export default function LiquidityPage() {
                     禁止策略
                   </div>
                   <div className="text-red-300 mt-2 text-sm">
-                    {modelOutput.forbidden_strategies.join(", ")}
+                    {liquidity.forbidden_strategies.join(", ")}
                   </div>
                 </div>
               </div>
@@ -239,7 +314,10 @@ export default function LiquidityPage() {
                     title="SOFR-IORB 利差 (bp)"
                     color="#10b981"
                     showArea={false}
-                    referenceLines={[{ y: 5, color: "#ef4444", label: "红灯阈值" }]}
+                    referenceLines={[
+                      { y: 3, color: "#f59e0b", label: "警示" },
+                      { y: 5, color: "#ef4444", label: "红灯" },
+                    ]}
                   />
                 )}
                 {marketData.WRESBAL && marketData.WRESBAL.length > 0 && (
@@ -252,10 +330,35 @@ export default function LiquidityPage() {
                     color="#06b6d4"
                   />
                 )}
+                {marketData.MOVE && marketData.MOVE.length > 0 && (
+                  <Chart
+                    data={marketData.MOVE}
+                    title="MOVE 利率波动率"
+                    color="#ec4899"
+                    showArea={false}
+                    referenceLines={[
+                      { y: 100, color: "#f59e0b", label: "阻塞" },
+                      { y: 120, color: "#ef4444", label: "关闸" },
+                    ]}
+                  />
+                )}
+                {marketData.RRPONTSYD && marketData.RRPONTSYD.length > 0 && (
+                  <Chart
+                    data={marketData.RRPONTSYD.map((p) => ({
+                      ...p,
+                      value: p.value / 1e4, // 转换为亿
+                    }))}
+                    title="RRP (亿美元)"
+                    color="#f97316"
+                    referenceLines={[
+                      { y: 4000, color: "#ef4444", label: "缓冲阈值" },
+                    ]}
+                  />
+                )}
               </div>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

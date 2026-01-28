@@ -51,32 +51,36 @@ export default function OverviewPage() {
     }
   }, []);
 
-  const riskLightColor = modelOutput
-    ? getRiskLightColor(modelOutput.risk_light)
+  // 从新的 v2.0 响应结构中获取流动性数据
+  const liquidity = modelOutput?.liquidity;
+  const macro = modelOutput?.macro;
+
+  const riskLightColor = liquidity
+    ? getRiskLightColor(liquidity.risk_light)
     : "#52525b";
-  const riskLightLabel = modelOutput
-    ? getRiskLightLabel(modelOutput.risk_light)
+  const riskLightLabel = liquidity
+    ? getRiskLightLabel(liquidity.risk_light)
     : "未运行";
   const riskLightEmoji =
-    modelOutput?.risk_light === "green"
+    liquidity?.risk_light === "green"
       ? "🟢"
-      : modelOutput?.risk_light === "yellow"
+      : liquidity?.risk_light === "yellow"
       ? "🟡"
-      : modelOutput?.risk_light === "red"
+      : liquidity?.risk_light === "red"
       ? "🔴"
       : "⚪";
 
   const scoreColor =
-    (modelOutput?.liquidity_score ?? 0) >= 70
+    (liquidity?.liquidity_score ?? 0) >= 70
       ? "#10b981"
-      : (modelOutput?.liquidity_score ?? 0) >= 40
+      : (liquidity?.liquidity_score ?? 0) >= 40
       ? "#f59e0b"
       : "#ef4444";
 
   const leverageLabel =
-    (modelOutput?.leverage_coef ?? 0) <= 0.5
+    (liquidity?.leverage_coef ?? 0) <= 0.5
       ? "保守"
-      : (modelOutput?.leverage_coef ?? 0) <= 0.8
+      : (liquidity?.leverage_coef ?? 0) <= 0.8
       ? "适度"
       : "激进";
 
@@ -134,19 +138,19 @@ export default function OverviewPage() {
               />
               <MetricCard
                 label="流动性评分"
-                value={formatNumber(modelOutput.liquidity_score)}
+                value={formatNumber(liquidity?.liquidity_score ?? 0)}
                 sublabel="满分 100"
                 color={scoreColor}
               />
               <MetricCard
                 label="杠杆系数"
-                value={`${formatNumber(modelOutput.leverage_coef, 1)}x`}
+                value={`${formatNumber(liquidity?.leverage_coef ?? 0, 1)}x`}
                 sublabel={leverageLabel}
                 color="#06b6d4"
               />
               <MetricCard
                 label="执行时间"
-                value={`${modelOutput.execution_time_ms}ms`}
+                value={`${modelOutput.execution_time_ms ?? 0}ms`}
                 sublabel={modelOutput.status}
                 color="#a855f7"
               />
@@ -173,14 +177,14 @@ export default function OverviewPage() {
             <div className="divider" />
 
             {/* 闸门状态 */}
-            {modelOutput.gates.length > 0 && (
+            {macro?.layer3?.gates && macro.layer3.gates.length > 0 && (
               <div className="mb-8">
                 <h2 className="section-title">
                   <span className="text-lg">🚦</span>
                   闸门矩阵
                 </h2>
                 <div className="grid grid-cols-5 gap-4">
-                  {modelOutput.gates.map((gate) => (
+                  {macro.layer3.gates.map((gate) => (
                     <GateCard key={gate.name} gate={gate} />
                   ))}
                 </div>
