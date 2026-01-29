@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: (endpoint, options?) - API 端点路径和请求配置。
+ * [OUTPUT]: (Promise<T>) - 类型安全的 API 响应数据，或抛出 Error。
+ * [POS]: 位于 /lib，被所有页面组件引用。单例 ApiClient 封装所有后端 API 调用，通过 Next.js rewrite 代理转发请求。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/lib/.folder.md 的描述是否依然准确。
+ */
 import type {
   ApiResponse,
   ModelOutput,

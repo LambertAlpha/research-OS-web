@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: (label, value, sublabel?, color?, icon?, trend?, glowColor?) - 指标名称、数值、颜色和趋势方向。
+ * [OUTPUT]: (<div>) - 带顶部渐变线、霓虹发光效果的单指标卡片。
+ * [POS]: 位于 /components，被 Overview 页面引用。展示风险灯号、流动性评分、杠杆系数等核心数值。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/components/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import { cn } from "@/lib/utils";

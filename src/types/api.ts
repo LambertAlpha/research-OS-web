@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: N/A — 纯类型定义文件，无运行时输入。
+ * [OUTPUT]: TypeScript 接口/类型导出 — ApiResponse, GateStatus, LiquidityOutput(v3.0), MacroOutput(v4.0), ModelOutput(v2.0), MarketData 等。
+ * [POS]: 位于 /types，被 lib/api.ts 和所有页面/组件引用。前后端数据契约的唯一真相源，与后端 Python 模型输出结构一一对应。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/types/.folder.md 的描述是否依然准确。
+ */
 // API 响应包装类型
 export interface ApiResponse<T> {
   success: boolean;

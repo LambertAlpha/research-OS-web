@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: 用户点击"运行模型"按钮触发，可选 date 参数。
+ * [OUTPUT]: (JSX) - 流动性模型 v3.0 详情页，含一票否决警告、风险灯号/评分/杠杆三卡、分项得分、禁止策略、5 个流动性指标图表。
+ * [POS]: 流动性路由 (/liquidity)。专注展示 LiquidityOutput 数据，获取 WALCL/SOFR/IORB/WRESBAL/RRPONTSYD/MOVE 六种市场数据。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/app/liquidity/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import { useState, useCallback } from "react";

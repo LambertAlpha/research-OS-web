@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: (onRunModel: (date?) => Promise<void>, isLoading?: boolean, lastUpdate?: string) - 运行回调、加载态、最后更新时间。
+ * [OUTPUT]: (<header>) - 顶部粘性工具栏，含日期选择器 + 运行模型按钮 + 最后更新时间显示。
+ * [POS]: 位于 /components，被所有页面组件引用。作为用户触发模型运行的统一入口。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/components/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import { useState } from "react";

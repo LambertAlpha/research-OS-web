@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: (data: RawDataPoint[], title, color?, showArea?, referenceLines?) - 时序数据点、标题、图表样式配置。
+ * [OUTPUT]: (<div>) - 基于 Recharts 的图表卡片，支持面积图/折线图，含最新值、变化率、参考线。
+ * [POS]: 位于 /components，被 Overview/Liquidity/Macro 三个页面引用。通用金融数据可视化组件。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/components/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import {

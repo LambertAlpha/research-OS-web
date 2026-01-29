@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: 用户点击"运行模型"按钮触发，可选 date 参数。
+ * [OUTPUT]: (JSX) - 宏观模型 v4.0 详情页，含宏观状态(A/B/C/D)、纠错系统、Layer1 利率结构、Layer2 叙事校验、Layer3 闸门矩阵、Layer4 执行矩阵、市场指标图表。
+ * [POS]: 宏观路由 (/macro)。专注展示 MacroOutput 四层结构，获取 DXY/HY_OAS/IG_OAS/VIX/SPX/US10Y 六种市场数据。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/app/macro/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import { useState, useCallback } from "react";

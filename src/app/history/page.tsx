@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: 用户点击"运行模型"按钮触发，可选 date 参数。
+ * [OUTPUT]: (JSX) - 运行历史页面，含触发规则表格、告警信息列表、运行元数据摘要（Run ID、版本、执行时间、状态）。
+ * [POS]: 历史路由 (/history)。展示 ModelOutput 中的 triggered_rules 和 alerts，当前为单次运行结果（待后端数据库支持完整历史）。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/app/history/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import { useState, useCallback } from "react";

@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: 无 props。内部读取 usePathname() 获取当前路由路径。
+ * [OUTPUT]: (<aside>) - 固定左侧导航栏，含 Logo、四个导航项（Overview/Liquidity/Macro/History）、系统状态、Settings 入口。
+ * [POS]: 位于 /components，被 layout.tsx 引用。全局唯一的导航组件，固定于屏幕左侧 (w-64, h-screen)。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/components/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import Link from "next/link";

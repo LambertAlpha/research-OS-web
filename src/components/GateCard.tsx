@@ -1,3 +1,12 @@
+/**
+ * [INPUT]: (gate: GateStatus) - 门控状态对象，含 name/status/value/threshold/message。
+ * [OUTPUT]: (<div>) - 闸门状态卡片，含状态指示器（脉冲动画）、值/阈值显示、进度条。
+ * [POS]: 位于 /components，被 Overview 和 Macro 页面引用。可视化 Layer3 风险闸门矩阵中的单个闸门。
+ *
+ * [PROTOCOL]:
+ * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 2. 更新后必须上浮检查 /src/components/.folder.md 的描述是否依然准确。
+ */
 "use client";
 
 import { getGateStatusColor } from "@/lib/utils";
