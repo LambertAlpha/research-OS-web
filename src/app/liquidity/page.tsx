@@ -12,6 +12,7 @@
 import { useState, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Chart } from "@/components/Chart";
+import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
 import { getRiskLightColor, getRiskLightLabel, formatNumber, cn } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
@@ -160,8 +161,9 @@ export default function LiquidityPage() {
                   }}
                 />
                 <div className="text-6xl mb-4">{riskLightEmoji}</div>
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-center gap-1.5">
                   风险灯号
+                  <Tooltip indicatorKey="risk_light" placement="top" />
                 </div>
                 <div
                   className="text-xl font-semibold mt-2"
@@ -186,8 +188,9 @@ export default function LiquidityPage() {
                   {formatNumber(liquidity.liquidity_score)}
                   <span className="text-lg text-zinc-500">/100</span>
                 </div>
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-2">
+                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-2 flex items-center justify-center gap-1.5">
                   流动性评分
+                  <Tooltip indicatorKey="liquidity_score" placement="top" />
                 </div>
                 {/* 进度条 */}
                 <div className="mt-4 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
@@ -218,8 +221,9 @@ export default function LiquidityPage() {
                   {formatNumber(liquidity.leverage_coef, 1)}
                   <span className="text-xl text-zinc-500">x</span>
                 </div>
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-2">
+                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-2 flex items-center justify-center gap-1.5">
                   建议杠杆
+                  <Tooltip indicatorKey="leverage_coef" placement="top" />
                 </div>
                 <div className="text-zinc-400 text-sm mt-3">
                   {liquidity.leverage_coef <= 0.5
@@ -253,8 +257,9 @@ export default function LiquidityPage() {
                       key={comp.name}
                       className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl"
                     >
-                      <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                      <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                         {comp.name.replace(/_/g, ' ')}
+                        <Tooltip indicatorKey={comp.name.toLowerCase()} placement="top" />
                       </div>
                       <div className="text-2xl font-bold text-zinc-200">
                         {formatNumber(comp.score)}

@@ -144,18 +144,21 @@ export default function OverviewPage() {
                 value={riskLightEmoji}
                 sublabel={riskLightLabel}
                 color={riskLightColor}
+                indicatorKey="risk_light"
               />
               <MetricCard
                 label="流动性评分"
                 value={formatNumber(liquidity?.liquidity_score ?? 0)}
                 sublabel="满分 100"
                 color={scoreColor}
+                indicatorKey="liquidity_score"
               />
               <MetricCard
                 label="杠杆系数"
                 value={`${formatNumber(liquidity?.leverage_coef ?? 0, 1)}x`}
                 sublabel={leverageLabel}
                 color="#06b6d4"
+                indicatorKey="leverage_coef"
               />
               <MetricCard
                 label="执行时间"

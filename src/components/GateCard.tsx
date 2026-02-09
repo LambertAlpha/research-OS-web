@@ -1,6 +1,6 @@
 /**
  * [INPUT]: (gate: GateStatus) - 门控状态对象，含 name/status/value/threshold/message。
- * [OUTPUT]: (<div>) - 闸门状态卡片，含状态指示器（脉冲动画）、值/阈值显示、进度条。
+ * [OUTPUT]: (<div>) - 闸门状态卡片，含状态指示器（脉冲动画）、值/阈值显示、进度条、悬浮解释。
  * [POS]: 位于 /components，被 Overview 和 Macro 页面引用。可视化 Layer3 风险闸门矩阵中的单个闸门。
  *
  * [PROTOCOL]:
@@ -12,6 +12,7 @@
 import { getGateStatusColor } from "@/lib/utils";
 import type { GateStatus } from "@/types/api";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "./Tooltip";
 
 interface GateCardProps {
   gate: GateStatus;
@@ -74,7 +75,10 @@ export function GateCard({ gate }: GateCardProps) {
       {/* 内容 */}
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="font-semibold text-zinc-200 text-sm">{gate.name}</h4>
+          <div className="flex items-center gap-1.5">
+            <h4 className="font-semibold text-zinc-200 text-sm">{gate.name}</h4>
+            <Tooltip indicatorKey={gate.name.toLowerCase().replace(/\s+/g, "_")} placement="right" />
+          </div>
           <span
             className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5"
             style={{

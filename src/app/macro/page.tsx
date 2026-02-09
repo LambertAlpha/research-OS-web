@@ -13,6 +13,7 @@ import { useState, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { GateCard } from "@/components/GateCard";
 import { Chart } from "@/components/Chart";
+import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
 import { cn, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
@@ -229,8 +230,9 @@ export default function MacroPage() {
                 <div className="grid grid-cols-4 gap-4">
                   {/* 政策路径 */}
                   <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       政策路径
+                      <Tooltip indicatorKey="policy_path" placement="top" />
                     </div>
                     <div className="text-lg font-semibold text-zinc-200">
                       {layer1.policy_path.label}
@@ -245,8 +247,9 @@ export default function MacroPage() {
 
                   {/* 曲线结构 */}
                   <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       曲线形态
+                      <Tooltip indicatorKey="curve_structure" placement="top" />
                     </div>
                     <div className="text-lg font-semibold text-zinc-200">
                       {layer1.curve_structure.direction_label}
@@ -261,8 +264,9 @@ export default function MacroPage() {
 
                   {/* Real/BE */}
                   <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       Real/BE
+                      <Tooltip indicatorKey="real_be" placement="top" />
                     </div>
                     <div className="text-lg font-semibold text-zinc-200">
                       {layer1.real_be.state.replace(/_/g, " ")}
@@ -287,8 +291,9 @@ export default function MacroPage() {
                         : "border-zinc-800/50"
                     )}
                   >
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       期限溢价
+                      <Tooltip indicatorKey="term_premium" placement="top" />
                     </div>
                     <div
                       className={cn(
@@ -321,8 +326,9 @@ export default function MacroPage() {
                 <div className="grid grid-cols-3 gap-4">
                   {/* 20D 相关性 */}
                   <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       Corr(SPX, Δ10Y) 20D
+                      <Tooltip indicatorKey="corr_20d" placement="top" />
                     </div>
                     <div
                       className={cn(
@@ -347,8 +353,9 @@ export default function MacroPage() {
 
                   {/* 60D 相关性 */}
                   <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       Corr(SPX, Δ10Y) 60D
+                      <Tooltip indicatorKey="corr_60d" placement="top" />
                     </div>
                     <div
                       className={cn(
@@ -380,8 +387,9 @@ export default function MacroPage() {
                         : "border-zinc-800/50"
                     )}
                   >
-                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       叙事状态
+                      <Tooltip indicatorKey="narrative_state" placement="top" />
                     </div>
                     <div
                       className={cn(
@@ -445,8 +453,9 @@ export default function MacroPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
                     <div className="flex items-center gap-2 mb-3">
                       <Target className="w-4 h-4 text-cyan-400" />
-                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         利率表达
+                        <Tooltip indicatorKey="rates_action" placement="top" />
                       </span>
                     </div>
                     <div className="text-lg text-zinc-200 font-medium mb-2">
@@ -477,8 +486,9 @@ export default function MacroPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
                     <div className="flex items-center gap-2 mb-3">
                       <TrendingUp className="w-4 h-4 text-purple-400" />
-                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         股票板块
+                        <Tooltip indicatorKey="equity_sector" placement="top" />
                       </span>
                     </div>
                     <div className="text-lg text-zinc-200 font-medium mb-2">
@@ -494,8 +504,9 @@ export default function MacroPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
                     <div className="flex items-center gap-2 mb-3">
                       <Shield className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         对冲要求
+                        <Tooltip indicatorKey="hedge_required" placement="top" />
                       </span>
                     </div>
                     <div className="mb-2">
@@ -525,8 +536,9 @@ export default function MacroPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
                     <div className="flex items-center gap-2 mb-3">
                       <LineChart className="w-4 h-4 text-pink-400" />
-                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         卖波动许可
+                        <Tooltip indicatorKey="short_vol" placement="top" />
                       </span>
                     </div>
                     <div className="mb-2">

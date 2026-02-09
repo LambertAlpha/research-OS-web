@@ -1,15 +1,16 @@
 /**
- * [INPUT]: (label, value, sublabel?, color?, icon?, trend?, glowColor?) - 指标名称、数值、颜色和趋势方向。
- * [OUTPUT]: (<div>) - 带顶部渐变线、霓虹发光效果的单指标卡片。
- * [POS]: 位于 /components，被 Overview 页面引用。展示风险灯号、流动性评分、杠杆系数等核心数值。
+ * [INPUT]: (label, value, sublabel?, color?, icon?, trend?, glowColor?, indicatorKey?) - 指标名称、数值、颜色和趋势方向、可选的指标解释 key。
+ * [OUTPUT]: (<div>) - 带顶部渐变线、霓虹发光效果的单指标卡片,支持悬浮解释。
+ * [POS]: 位于 /components,被 Overview 页面引用。展示风险灯号、流动性评分、杠杆系数等核心数值。
  *
  * [PROTOCOL]:
- * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
+ * 1. 一旦本文件逻辑变更,必须同步更新此 Header。
  * 2. 更新后必须上浮检查 /src/components/.folder.md 的描述是否依然准确。
  */
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Tooltip } from "./Tooltip";
 
 interface MetricCardProps {
   label: string;
@@ -19,6 +20,7 @@ interface MetricCardProps {
   icon?: React.ReactNode;
   trend?: "up" | "down" | "neutral";
   glowColor?: string;
+  indicatorKey?: string;
 }
 
 export function MetricCard({
@@ -29,6 +31,7 @@ export function MetricCard({
   icon,
   trend,
   glowColor,
+  indicatorKey,
 }: MetricCardProps) {
   const trendColor =
     trend === "up"
@@ -67,9 +70,12 @@ export function MetricCard({
       {/* 内容 */}
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-3">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-            {label}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              {label}
+            </p>
+            {indicatorKey && <Tooltip indicatorKey={indicatorKey} placement="right" />}
+          </div>
           {icon && (
             <div
               className="p-2 rounded-lg"
