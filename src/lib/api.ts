@@ -17,6 +17,43 @@ import type {
   HistoryResponse,
 } from "@/types/api";
 
+/**
+ * 深度清理 API 响应中可能存在的枚举对象
+ * Python 枚举序列化后可能包含 _name_, _value_ 等属性
+ */
+function sanitizeEnumObjects(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeEnumObjects);
+  }
+
+  if (typeof obj === "object") {
+    const record = obj as Record<string, unknown>;
+
+    // 检测 Python 枚举对象的特征
+    if ("_value_" in record && "_name_" in record) {
+      // 返回枚举的值
+      return record._value_;
+    }
+
+    // 递归处理所有属性
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(record)) {
+      // 跳过私有属性
+      if (key.startsWith("_")) {
+        continue;
+      }
+      result[key] = sanitizeEnumObjects(value);
+    }
+    return result;
+  }
+
+  return obj;
+}
+
 // 使用相对路径，让 Vercel rewrites 代理到后端
 // 本地开发时会请求 localhost:3000/api，Next.js 代理到后端
 // 生产环境请求 vercel.app/api，Vercel 代理到后端
@@ -52,7 +89,8 @@ class ApiClient {
       throw new Error(result.error || "Unknown error");
     }
 
-    return result.data as T;
+    // 清理可能存在的 Python 枚举对象
+    return sanitizeEnumObjects(result.data) as T;
   }
 
   /**
