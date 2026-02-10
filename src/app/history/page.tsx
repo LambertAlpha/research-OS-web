@@ -241,7 +241,7 @@ export default function HistoryPage() {
                         </thead>
                         <tbody>
                           {Object.entries(modelOutput.triggered_rules).map(
-                            ([name, data]: [string, any], i) => (
+                            ([name, data]: [string, unknown], i) => (
                               <tr
                                 key={name}
                                 className={cn(
@@ -253,10 +253,10 @@ export default function HistoryPage() {
                                   {name}
                                 </td>
                                 <td className="py-4 px-5 text-sm text-zinc-400">
-                                  {String(data?.condition || "").slice(0, 60)}
+                                  {String((data as Record<string, unknown>)?.condition || "").slice(0, 60)}
                                 </td>
                                 <td className="py-4 px-5 text-sm text-zinc-400">
-                                  {String(data?.result || "").slice(0, 40)}
+                                  {String((data as Record<string, unknown>)?.result || "").slice(0, 40)}
                                 </td>
                               </tr>
                             )

@@ -14,9 +14,9 @@ import { Header } from "@/components/Header";
 import { Chart } from "@/components/Chart";
 import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
-import { getRiskLightColor, getRiskLightLabel, formatNumber, cn } from "@/lib/utils";
+import { getRiskLightColor, getRiskLightLabel, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
-import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, Shield, RefreshCw } from "lucide-react";
+import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function LiquidityPage() {
   const [isRunning, setIsRunning] = useState(false);
@@ -30,7 +30,7 @@ export default function LiquidityPage() {
       try {
         const output = await apiClient.getLatestOutput();
         setModelOutput(output);
-      } catch (error) {
+      } catch {
         // 没有历史数据，需要用户运行模型
         console.log("No latest output available");
       } finally {

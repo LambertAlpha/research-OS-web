@@ -12,7 +12,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-// @ts-ignore - Next.js 自动提供 react-dom 类型
+// @ts-expect-error - Next.js 自动提供 react-dom 类型
 import { createPortal } from "react-dom";
 import { Eye } from "lucide-react";
 import { getIndicatorInfo, type IndicatorInfo } from "@/lib/indicators";

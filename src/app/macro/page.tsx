@@ -44,7 +44,7 @@ export default function MacroPage() {
       try {
         const output = await apiClient.getLatestOutput();
         setModelOutput(output);
-      } catch (error) {
+      } catch {
         // 没有历史数据，需要用户运行模型
         console.log("No latest output available");
       } finally {
