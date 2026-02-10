@@ -238,3 +238,28 @@ export interface HealthCheck {
   };
   timestamp: string;
 }
+
+// ============================================================================
+// 历史记录类型
+// ============================================================================
+
+// 历史记录条目（从数据库返回的简化格式）
+export interface HistoryRecord {
+  run_id: string;
+  run_ts: string;
+  data_date: string;
+  model_type: string;
+  model_version: string;
+  status: string;
+  execution_time_ms: number;
+  risk_light?: string | null;
+  liquidity_score?: number | null;
+  macro_state?: string | null;
+}
+
+// 历史记录响应
+export interface HistoryResponse {
+  total: number;
+  days: number;
+  records: HistoryRecord[];
+}

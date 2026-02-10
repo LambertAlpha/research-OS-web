@@ -14,6 +14,7 @@ import type {
   LiquidityOutput,
   MacroOutput,
   HealthCheck,
+  HistoryResponse,
 } from "@/types/api";
 
 // 使用相对路径，让 Vercel rewrites 代理到后端
@@ -102,6 +103,24 @@ class ApiClient {
    */
   async listSymbols(): Promise<{ symbols: string[]; count: number }> {
     return this.request("/api/market-data");
+  }
+
+  /**
+   * 获取模型运行历史记录（从数据库）
+   */
+  async getHistory(days: number = 30, modelType?: string): Promise<HistoryResponse> {
+    const params = new URLSearchParams({ days: String(days) });
+    if (modelType) {
+      params.append("model_type", modelType);
+    }
+    return this.request(`/api/model/history?${params.toString()}`);
+  }
+
+  /**
+   * 根据 run_id 获取特定的模型运行结果（从数据库）
+   */
+  async getOutputById(runId: string): Promise<ModelOutput> {
+    return this.request(`/api/model/output/${runId}`);
   }
 }
 
