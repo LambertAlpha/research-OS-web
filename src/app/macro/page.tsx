@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 用户点击"运行模型"按钮触发，可选 date 参数。
+ * [INPUT]: 页面加载时自动获取最新模型输出，用户可点击"运行模型"刷新。
  * [OUTPUT]: (JSX) - 宏观模型 v4.0 详情页，含宏观状态(A/B/C/D)、纠错系统、Layer1 利率结构、Layer2 叙事校验、Layer3 闸门矩阵、Layer4 执行矩阵、市场指标图表。
  * [POS]: 宏观路由 (/macro)。专注展示 MacroOutput 四层结构，获取 DXY/HY_OAS/IG_OAS/VIX/SPX/US10Y 六种市场数据。
  *
@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { GateCard } from "@/components/GateCard";
 import { Chart } from "@/components/Chart";
@@ -29,12 +29,30 @@ import {
   ArrowUpDown,
   Layers,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 
 export default function MacroPage() {
   const [isRunning, setIsRunning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
   const [marketData, setMarketData] = useState<Record<string, RawDataPoint[]>>({});
+
+  // 页面加载时获取最新数据
+  useEffect(() => {
+    const loadLatest = async () => {
+      try {
+        const output = await apiClient.getLatestOutput();
+        setModelOutput(output);
+      } catch (error) {
+        // 没有历史数据，需要用户运行模型
+        console.log("No latest output available");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadLatest();
+  }, []);
 
   const handleRunModel = useCallback(async (date?: string) => {
     setIsRunning(true);
@@ -127,7 +145,12 @@ export default function MacroPage() {
           </p>
         </div>
 
-        {!modelOutput ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <RefreshCw className="w-8 h-8 text-purple-400 animate-spin mb-4" />
+            <p className="text-zinc-500">加载最新数据...</p>
+          </div>
+        ) : !modelOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="relative mb-6">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center border border-purple-500/20">
@@ -136,7 +159,7 @@ export default function MacroPage() {
               <div className="absolute inset-0 rounded-2xl bg-purple-500/10 blur-xl" />
             </div>
             <h2 className="text-xl font-semibold text-zinc-200 mb-2">
-              准备就绪
+              暂无数据
             </h2>
             <p className="text-zinc-500 text-sm">
               点击「运行模型」按钮开始分析

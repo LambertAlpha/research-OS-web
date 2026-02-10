@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 用户点击"运行模型"按钮触发，可选 date 参数。
+ * [INPUT]: 页面加载时自动获取最新模型输出，用户可点击"运行模型"刷新。
  * [OUTPUT]: (JSX) - 流动性模型 v3.0 详情页，含一票否决警告、风险灯号/评分/杠杆三卡、分项得分、禁止策略、5 个流动性指标图表。
  * [POS]: 流动性路由 (/liquidity)。专注展示 LiquidityOutput 数据，获取 WALCL/SOFR/IORB/WRESBAL/RRPONTSYD/MOVE 六种市场数据。
  *
@@ -9,19 +9,36 @@
  */
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Chart } from "@/components/Chart";
 import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
 import { getRiskLightColor, getRiskLightLabel, formatNumber, cn } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
-import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, Shield } from "lucide-react";
+import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, Shield, RefreshCw } from "lucide-react";
 
 export default function LiquidityPage() {
   const [isRunning, setIsRunning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
   const [marketData, setMarketData] = useState<Record<string, RawDataPoint[]>>({});
+
+  // 页面加载时获取最新数据
+  useEffect(() => {
+    const loadLatest = async () => {
+      try {
+        const output = await apiClient.getLatestOutput();
+        setModelOutput(output);
+      } catch (error) {
+        // 没有历史数据，需要用户运行模型
+        console.log("No latest output available");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadLatest();
+  }, []);
 
   const handleRunModel = useCallback(async (date?: string) => {
     setIsRunning(true);
@@ -117,7 +134,12 @@ export default function LiquidityPage() {
           </p>
         </div>
 
-        {!modelOutput ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mb-4" />
+            <p className="text-zinc-500">加载最新数据...</p>
+          </div>
+        ) : !modelOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="relative mb-6">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-600/20 flex items-center justify-center border border-blue-500/20">
@@ -126,7 +148,7 @@ export default function LiquidityPage() {
               <div className="absolute inset-0 rounded-2xl bg-blue-500/10 blur-xl" />
             </div>
             <h2 className="text-xl font-semibold text-zinc-200 mb-2">
-              准备就绪
+              暂无数据
             </h2>
             <p className="text-zinc-500 text-sm">
               点击「运行模型」按钮开始分析
