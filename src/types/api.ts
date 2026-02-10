@@ -247,14 +247,14 @@ export interface HealthCheck {
 export interface HistoryRecord {
   run_id: string;
   run_ts: string;
-  data_date: string;
+  data_ts: string;
   model_type: string;
   model_version: string;
   status: string;
   execution_time_ms: number;
   risk_light?: string | null;
   liquidity_score?: number | null;
-  macro_state?: string | null;
+  leverage_coef?: number | null;
 }
 
 // 历史记录响应
