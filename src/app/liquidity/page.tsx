@@ -24,12 +24,30 @@ export default function LiquidityPage() {
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
   const [marketData, setMarketData] = useState<Record<string, RawDataPoint[]>>({});
 
-  // 页面加载时获取最新数据
+  // 页面加载时获取最新数据 + 市场数据
   useEffect(() => {
     const loadLatest = async () => {
       try {
         const output = await apiClient.getLatestOutput();
         setModelOutput(output);
+
+        // 同时获取流动性相关市场数据用于图表
+        const symbols = ["WALCL", "SOFR", "IORB", "WRESBAL", "RRPONTSYD", "MOVE"];
+        const results = await Promise.all(
+          symbols.map(async (symbol) => {
+            try {
+              const data = await apiClient.getMarketData(symbol);
+              return { symbol, data: data.data };
+            } catch {
+              return { symbol, data: [] as RawDataPoint[] };
+            }
+          })
+        );
+        const newMarketData: Record<string, RawDataPoint[]> = {};
+        results.forEach(({ symbol, data }) => {
+          newMarketData[symbol] = data;
+        });
+        setMarketData(newMarketData);
       } catch {
         // 没有历史数据，需要用户运行模型
         console.log("No latest output available");

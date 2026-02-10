@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 用户点击"运行模型"按钮触发，可选 date 参数。
+ * [INPUT]: 页面加载时自动获取最新模型输出，用户可点击"运行模型"刷新。可选 date 参数。
  * [OUTPUT]: (JSX) - 市场概览仪表板，含风险灯号、流动性评分、杠杆系数、模型报告、闸门矩阵、市场行情图表、告警信息。
  * [POS]: 首页路由 (/)，位于 /app 根路径。聚合 liquidity + macro 数据的全局概览视图，是用户进入系统的第一个触点。
  *
@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { MetricCard } from "@/components/MetricCard";
 import { GateCard } from "@/components/GateCard";
@@ -21,14 +21,49 @@ import {
   formatNumber,
 } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
-import { Rocket, AlertTriangle, TrendingUp, BarChart3 } from "lucide-react";
+import { Rocket, AlertTriangle, TrendingUp, BarChart3, RefreshCw } from "lucide-react";
 
 export default function OverviewPage() {
   const [isRunning, setIsRunning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
   const [marketData, setMarketData] = useState<Record<string, RawDataPoint[]>>(
     {}
   );
+
+  // 页面加载时获取最新数据 + 市场数据
+  useEffect(() => {
+    const loadLatest = async () => {
+      try {
+        const output = await apiClient.getLatestOutput();
+        setModelOutput(output);
+
+        // 同时获取市场数据用于图表
+        const symbols = ["SPX", "MOVE", "DXY", "HY_OAS"];
+        const results = await Promise.all(
+          symbols.map(async (symbol) => {
+            try {
+              const data = await apiClient.getMarketData(symbol);
+              return { symbol, data: data.data };
+            } catch {
+              return { symbol, data: [] as RawDataPoint[] };
+            }
+          })
+        );
+        const newMarketData: Record<string, RawDataPoint[]> = {};
+        results.forEach(({ symbol, data }) => {
+          newMarketData[symbol] = data;
+        });
+        setMarketData(newMarketData);
+      } catch {
+        // 没有历史数据，需要用户运行模型
+        console.log("No latest output available");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadLatest();
+  }, []);
 
   const handleRunModel = useCallback(async (date?: string) => {
     setIsRunning(true);
@@ -120,7 +155,12 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {!modelOutput ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mb-4" />
+            <p className="text-zinc-500">加载最新数据...</p>
+          </div>
+        ) : !modelOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="relative mb-6">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 flex items-center justify-center border border-cyan-500/20">
