@@ -71,12 +71,22 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(options.headers as Record<string, string>),
+    };
+
+    // 写操作需要 API Key 认证
+    if (options.method === "POST" || options.method === "PUT" || options.method === "DELETE") {
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+      if (apiKey) {
+        headers["X-API-Key"] = apiKey;
+      }
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {

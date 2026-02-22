@@ -9,13 +9,20 @@ const nextConfig: NextConfig = {
 
   // API 代理：解决 HTTPS → HTTP 混合内容问题
   // 前端请求 /api/* → Vercel 代理 → 后端服务器
+  // BACKEND_URL 必须在 Vercel 环境变量中配置
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${process.env.BACKEND_URL || "http://202.81.229.139:8000"}/api/:path*`,
-      },
-    ];
+    const backendUrl = process.env.BACKEND_URL;
+    if (!backendUrl) {
+      console.warn("BACKEND_URL is not set - API rewrites will not work");
+    }
+    return backendUrl
+      ? [
+          {
+            source: "/api/:path*",
+            destination: `${backendUrl}/api/:path*`,
+          },
+        ]
+      : [];
   },
 };
 
