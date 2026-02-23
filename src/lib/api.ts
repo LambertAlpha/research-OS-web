@@ -15,6 +15,7 @@ import type {
   MacroOutput,
   HealthCheck,
   HistoryResponse,
+  GateStatus,
 } from "@/types/api";
 
 /**
@@ -166,9 +167,147 @@ class ApiClient {
 
   /**
    * 根据 run_id 获取特定的模型运行结果（从数据库）
+   * 后端返回扁平的数据库格式，需要转换为前端 ModelOutput 嵌套结构
    */
   async getOutputById(runId: string): Promise<ModelOutput> {
-    return this.request(`/api/model/output/${runId}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw: any = await this.request(`/api/model/output/${runId}`);
+
+    // 如果已经是嵌套格式（有 liquidity 字段），直接返回
+    if (raw.liquidity && typeof raw.liquidity === "object" && "liquidity_score" in raw.liquidity) {
+      return raw as ModelOutput;
+    }
+
+    // 从扁平数据库格式转换为前端嵌套格式
+    const layer1 = raw.layer1_output?.details || {};
+    const layer2 = raw.layer2_output || {};
+    const layer3 = raw.layer3_output || {};
+    const correction = raw.correction_output || {};
+    const liquidityDetails = raw.layer1_output?.liquidity_details || {};
+
+    // 构造 Layer3 gates 数组
+    const gateEntries = Object.values(layer3).filter(
+      (v): v is Record<string, unknown> => typeof v === "object" && v !== null && "gate_name" in v
+    );
+    const gates: GateStatus[] = gateEntries.map((g) => ({
+      name: String(g.gate_name || ""),
+      status: String(g.status || "unknown") as GateStatus["status"],
+      value: (g.indicator_value ?? null) as GateStatus["value"],
+      threshold: (g.threshold ?? null) as GateStatus["threshold"],
+      message: g.action ? String(g.action) : null,
+      priority: typeof g.priority === "number" ? g.priority : null,
+    }));
+
+    // 判断宏观状态
+    const macroStateRule = raw.triggered_rules?.macro_state;
+    const stateCode = macroStateRule?.result?.state || "C";
+    const stateName = macroStateRule?.result?.name || "";
+
+    const macroStateConditions: Record<string, string> = {};
+    if (macroStateRule?.input_values) {
+      for (const [k, v] of Object.entries(macroStateRule.input_values)) {
+        macroStateConditions[k] = String(v);
+      }
+    }
+
+    // 构造执行矩阵 — action_output 可能为 null，做防御处理
+    const action = raw.action_output || {};
+
+    const liquidity: LiquidityOutput = {
+      liquidity_score: raw.liquidity_score ?? 0,
+      risk_light: raw.risk_light ?? "unknown",
+      leverage_coef: raw.leverage_coef ?? 0,
+      forbidden_strategies: raw.forbidden_strategies ?? [],
+      component_scores: liquidityDetails.component_scores ?? [],
+      hard_stop_triggered: liquidityDetails.hard_stop_triggered ?? false,
+      hard_stop_reason: liquidityDetails.hard_stop_reason ?? null,
+      supply_texture_adjustment: liquidityDetails.supply_texture_adjustment ?? 0,
+      rrp_buffer_amplified: liquidityDetails.rrp_buffer_amplified ?? false,
+    };
+
+    const macro: MacroOutput = {
+      macro_state: {
+        code: stateCode,
+        name: stateName,
+        conditions: macroStateConditions,
+      },
+      layer1: {
+        policy_path: {
+          state: layer1.policy_path_state ?? "",
+          label: layer1.policy_path_label ?? "",
+          interpretation: layer1.policy_path_interpretation ?? "",
+          delta_2y: layer1.delta_2y ?? 0,
+        },
+        curve_structure: {
+          curve_2s10s: layer1.curve_2s10s ?? 0,
+          curve_10s30s: layer1.curve_10s30s ?? 0,
+          direction_state: layer1.curve_direction ?? "",
+          direction_label: layer1.curve_direction_label ?? "",
+          curve_30y_direction: layer1.curve_30y_direction ?? "",
+        },
+        real_be: {
+          state: layer1.real_be_state ?? "",
+          interpretation: layer1.real_be_interpretation ?? "",
+          equity_impact: layer1.equity_impact ?? "",
+          delta_real: layer1.delta_real ?? 0,
+          delta_be: layer1.delta_be ?? 0,
+        },
+        term_premium: {
+          state: layer1.tp_state ?? "",
+          warning: layer1.tp_warning ?? false,
+        },
+      },
+      layer2: {
+        correlation: {
+          corr_20d: layer2.corr_20d?.indicator_value ?? 0,
+          corr_60d: layer2.corr_60d?.indicator_value ?? 0,
+          state_20d: layer2.corr_20d?.status === "open"
+            ? (layer2.corr_20d?.indicator_value > 0.3 ? "positive" : layer2.corr_20d?.indicator_value < -0.3 ? "negative" : "neutral")
+            : "neutral",
+          state_60d: layer2.corr_60d?.status === "open"
+            ? (layer2.corr_60d?.indicator_value > 0.3 ? "positive" : layer2.corr_60d?.indicator_value < -0.3 ? "negative" : "neutral")
+            : "neutral",
+          is_conflicting: layer2.is_conflicting ?? false,
+          narrative_state: layer2.narrative_state ?? "transition",
+        },
+      },
+      layer3: {
+        gates,
+        any_gate_closed: gates.some((g) => g.status === "closed"),
+      },
+      execution_matrix: {
+        rates_action: action.rates_action ?? "N/A",
+        rates_instruments: action.rates_instruments ?? [],
+        rates_confidence: action.rates_confidence ?? "LOW",
+        equity_sector_bias: action.equity_sector_bias ?? "N/A",
+        equity_sectors: action.equity_sectors ?? [],
+        hedge_required: action.hedge_required ?? false,
+        hedge_type: action.hedge_type ?? null,
+        hedge_instruments: action.hedge_instruments ?? null,
+        short_vol_allowed: action.short_vol_allowed ?? false,
+        short_vol_constraints: action.short_vol_constraints ?? null,
+      },
+      correction: {
+        level: correction.level ?? "NONE",
+        reason: correction.reason ?? "",
+        triggered_conditions: correction.triggered_conditions ?? [],
+        suggested_action: correction.suggested_action ?? "",
+      },
+    };
+
+    return {
+      run_id: raw.run_id,
+      run_ts: raw.run_ts,
+      data_ts: raw.data_ts,
+      model_version: raw.model_version,
+      liquidity,
+      macro,
+      report_summary: raw.report_summary ?? "",
+      alerts: raw.alerts ?? [],
+      triggered_rules: raw.triggered_rules ?? {},
+      execution_time_ms: raw.execution_time_ms ?? 0,
+      status: raw.status ?? "UNKNOWN",
+    };
   }
 }
 
