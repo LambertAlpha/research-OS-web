@@ -72,14 +72,25 @@ export default function HistoryPage() {
     }
   }, [loadHistory]);
 
-  // 格式化时间
+  // 格式化运行时间（含时分）
   const formatTime = (ts: string) => {
     const date = new Date(ts);
     return date.toLocaleString("zh-CN", {
+      year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
+    });
+  };
+
+  // 格式化数据日期（仅日期）
+  const formatDate = (ts: string) => {
+    const date = new Date(ts);
+    return date.toLocaleDateString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -174,9 +185,11 @@ export default function HistoryPage() {
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm text-zinc-200">{formatTime(record.run_ts)}</div>
+                            <div className="text-sm text-zinc-200">
+                              {record.data_ts ? formatDate(record.data_ts) : formatDate(record.run_ts)}
+                            </div>
                             <div className="text-xs text-zinc-500 mt-1">
-                              {record.model_type} · {record.execution_time_ms}ms
+                              运行于 {formatTime(record.run_ts)} · {record.execution_time_ms}ms
                             </div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-zinc-600" />
@@ -343,7 +356,15 @@ export default function HistoryPage() {
                   </h2>
                   <div className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
                     <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-5 gap-6">
+                      <div>
+                        <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">
+                          数据日期
+                        </div>
+                        <div className="text-sm text-zinc-100 mt-2 font-medium">
+                          {modelOutput.data_ts ? formatDate(modelOutput.data_ts) : "N/A"}
+                        </div>
+                      </div>
                       <div>
                         <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">
                           Run ID
