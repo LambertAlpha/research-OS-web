@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import apiClient from "@/lib/api";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
@@ -23,6 +23,37 @@ export default function HistoryPage() {
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>();
+
+  // 从历史记录中提取可用日期
+  const availableDates = useMemo(
+    () => [...new Set(historyRecords.map((r) => r.data_ts?.split("T")[0]).filter((d): d is string => !!d))],
+    [historyRecords]
+  );
+
+  // 日期选择回调
+  const handleDateSelect = useCallback(
+    async (date: string) => {
+      const record = historyRecords.find(
+        (r) => r.data_ts.split("T")[0] === date
+      );
+      if (!record) return;
+
+      setSelectedDate(date);
+      setSelectedRecord(record);
+      setIsLoadingDetail(true);
+      try {
+        const output = await apiClient.getOutputById(record.run_id);
+        setModelOutput(output);
+      } catch (error) {
+        console.error("Failed to load output for date:", error);
+        setModelOutput(null);
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    },
+    [historyRecords]
+  );
 
   // 加载历史记录
   const loadHistory = useCallback(async () => {
@@ -94,6 +125,9 @@ export default function HistoryPage() {
         onRunModel={handleRunModel}
         isLoading={isRunning}
         lastUpdate={modelOutput?.run_ts}
+        availableDates={availableDates}
+        onDateSelect={handleDateSelect}
+        selectedDate={selectedDate}
       />
 
       <div className="p-6">

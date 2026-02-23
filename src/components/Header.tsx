@@ -1,7 +1,7 @@
 /**
- * [INPUT]: (onRunModel: (date?) => Promise<void>, isLoading?: boolean, lastUpdate?: string) - 运行回调、加载态、最后更新时间。
- * [OUTPUT]: (<header>) - 顶部粘性工具栏，含日期选择器 + 运行模型按钮 + 最后更新时间显示。
- * [POS]: 位于 /components，被所有页面组件引用。作为用户触发模型运行的统一入口。
+ * [INPUT]: (onRunModel, isLoading?, lastUpdate?, availableDates, onDateSelect, selectedDate?) - 运行回调、加载态、最后更新时间、有数据日期列表、日期选择回调、当前选中日期。
+ * [OUTPUT]: (<header>) - 顶部粘性工具栏，含 DatePicker 日历选择器 + 运行模型按钮 + 最后更新时间显示。
+ * [POS]: 位于 /components，被所有页面组件引用。作为用户触发模型运行和切换历史日期的统一入口。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
@@ -9,21 +9,29 @@
  */
 "use client";
 
-import { useState } from "react";
-import { RefreshCw, Calendar, Zap } from "lucide-react";
+import { RefreshCw, Zap } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
+import { DatePicker } from "@/components/DatePicker";
 
 interface HeaderProps {
   onRunModel: (date?: string) => Promise<void>;
   isLoading?: boolean;
   lastUpdate?: string;
+  availableDates: string[];
+  onDateSelect: (date: string) => void;
+  selectedDate?: string;
 }
 
-export function Header({ onRunModel, isLoading, lastUpdate }: HeaderProps) {
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-
+export function Header({
+  onRunModel,
+  isLoading,
+  lastUpdate,
+  availableDates,
+  onDateSelect,
+  selectedDate,
+}: HeaderProps) {
   const handleRun = () => {
-    onRunModel(date);
+    onRunModel(selectedDate);
   };
 
   return (
@@ -49,17 +57,12 @@ export function Header({ onRunModel, isLoading, lastUpdate }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 日期选择器 */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900/50 border border-zinc-800/50 backdrop-blur-sm">
-              <Calendar className="w-4 h-4 text-cyan-400/70" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                max={new Date().toISOString().split("T")[0]}
-                className="bg-transparent border-none text-sm text-zinc-300 focus:outline-none w-32 [color-scheme:dark]"
-              />
-            </div>
+            {/* 日历选择器 */}
+            <DatePicker
+              selectedDate={selectedDate}
+              availableDates={availableDates}
+              onDateSelect={onDateSelect}
+            />
 
             {/* 运行按钮 */}
             <button

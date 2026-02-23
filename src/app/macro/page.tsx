@@ -9,14 +9,14 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { GateCard } from "@/components/GateCard";
 import { Chart } from "@/components/Chart";
 import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
 import { cn, formatNumber } from "@/lib/utils";
-import type { ModelOutput, RawDataPoint } from "@/types/api";
+import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
 import {
   Globe,
   BarChart3,
@@ -37,70 +37,97 @@ export default function MacroPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
   const [marketData, setMarketData] = useState<Record<string, RawDataPoint[]>>({});
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>();
+  const historyRecords = useRef<HistoryRecord[]>([]);
 
-  // 页面加载时获取最新数据 + 市场数据
+  // 加载市场数据的辅助函数
+  const loadMarketData = useCallback(async () => {
+    const symbols = ["DXY", "HY_OAS", "IG_OAS", "VIX", "SPX", "US10Y"];
+    const results = await Promise.all(
+      symbols.map(async (symbol) => {
+        try {
+          const data = await apiClient.getMarketData(symbol);
+          return { symbol, data: data.data };
+        } catch {
+          return { symbol, data: [] as RawDataPoint[] };
+        }
+      })
+    );
+    const newMarketData: Record<string, RawDataPoint[]> = {};
+    results.forEach(({ symbol, data }) => {
+      newMarketData[symbol] = data;
+    });
+    setMarketData(newMarketData);
+  }, []);
+
+  // 页面加载时获取最新数据 + 市场数据 + 历史记录
   useEffect(() => {
     const loadLatest = async () => {
       try {
-        const output = await apiClient.getLatestOutput();
+        const [output, history] = await Promise.all([
+          apiClient.getLatestOutput(),
+          apiClient.getHistory(365).catch(() => ({ records: [] as HistoryRecord[], total: 0, days: 365 })),
+        ]);
         setModelOutput(output);
+        setSelectedDate(output.data_ts?.split("T")[0]);
 
-        // 同时获取宏观相关市场数据用于图表
-        const symbols = ["DXY", "HY_OAS", "IG_OAS", "VIX", "SPX", "US10Y"];
-        const results = await Promise.all(
-          symbols.map(async (symbol) => {
-            try {
-              const data = await apiClient.getMarketData(symbol);
-              return { symbol, data: data.data };
-            } catch {
-              return { symbol, data: [] as RawDataPoint[] };
-            }
-          })
-        );
-        const newMarketData: Record<string, RawDataPoint[]> = {};
-        results.forEach(({ symbol, data }) => {
-          newMarketData[symbol] = data;
-        });
-        setMarketData(newMarketData);
+        historyRecords.current = history.records;
+        const dates = [...new Set(history.records.map((r) => r.data_ts?.split("T")[0]).filter((d): d is string => !!d))];
+        setAvailableDates(dates);
+
+        await loadMarketData();
       } catch {
-        // 没有历史数据，需要用户运行模型
         console.log("No latest output available");
       } finally {
         setIsLoading(false);
       }
     };
     loadLatest();
-  }, []);
+  }, [loadMarketData]);
+
+  // 日期选择回调
+  const handleDateSelect = useCallback(
+    async (date: string) => {
+      const record = historyRecords.current.find(
+        (r) => r.data_ts.split("T")[0] === date
+      );
+      if (!record) return;
+
+      setSelectedDate(date);
+      setIsLoading(true);
+      try {
+        const output = await apiClient.getOutputById(record.run_id);
+        setModelOutput(output);
+        await loadMarketData();
+      } catch (error) {
+        console.error("Failed to load output for date:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loadMarketData]
+  );
 
   const handleRunModel = useCallback(async (date?: string) => {
     setIsRunning(true);
     try {
       const output = await apiClient.runModel(date);
       setModelOutput(output);
+      setSelectedDate(output.data_ts?.split("T")[0]);
 
-      // 获取宏观相关数据
-      const symbols = ["DXY", "HY_OAS", "IG_OAS", "VIX", "SPX", "US10Y"];
-      const dataPromises = symbols.map(async (symbol) => {
-        try {
-          const data = await apiClient.getMarketData(symbol);
-          return { symbol, data: data.data };
-        } catch {
-          return { symbol, data: [] };
-        }
-      });
+      const history = await apiClient.getHistory(365).catch(() => ({ records: [] as HistoryRecord[], total: 0, days: 365 }));
+      historyRecords.current = history.records;
+      const dates = [...new Set(history.records.map((r) => r.data_ts?.split("T")[0]).filter((d): d is string => !!d))];
+      setAvailableDates(dates);
 
-      const results = await Promise.all(dataPromises);
-      const newMarketData: Record<string, RawDataPoint[]> = {};
-      results.forEach(({ symbol, data }) => {
-        newMarketData[symbol] = data;
-      });
-      setMarketData(newMarketData);
+      await loadMarketData();
     } catch (error) {
       console.error("Failed to run model:", error);
     } finally {
       setIsRunning(false);
     }
-  }, []);
+  }, [loadMarketData]);
 
   // 从新的响应结构中获取宏观数据
   const macro = modelOutput?.macro;
@@ -147,6 +174,9 @@ export default function MacroPage() {
         onRunModel={handleRunModel}
         isLoading={isRunning}
         lastUpdate={modelOutput?.run_ts}
+        availableDates={availableDates}
+        onDateSelect={handleDateSelect}
+        selectedDate={selectedDate}
       />
 
       <div className="p-6">
