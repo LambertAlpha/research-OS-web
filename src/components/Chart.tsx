@@ -76,6 +76,7 @@ export function Chart({
       date: new Date(point.ts).toLocaleDateString("zh-CN", {
         month: "short",
         day: "numeric",
+        timeZone: "Asia/Shanghai",
       }),
       value: point.value,
       fullDate: point.ts,
@@ -257,7 +258,8 @@ export function Chart({
               labelFormatter={(_, payload) =>
                 payload?.[0]?.payload?.fullDate
                   ? new Date(payload[0].payload.fullDate).toLocaleDateString(
-                      "zh-CN"
+                      "zh-CN",
+                      { timeZone: "Asia/Shanghai" }
                     )
                   : ""
               }

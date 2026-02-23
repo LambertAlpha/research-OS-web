@@ -12,7 +12,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/Header";
 import apiClient from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import type { ModelOutput, HistoryRecord } from "@/types/api";
 import { History, Search, AlertTriangle, BarChart3, Clock, ChevronRight, RefreshCw } from "lucide-react";
 
@@ -72,27 +72,7 @@ export default function HistoryPage() {
     }
   }, [loadHistory]);
 
-  // 格式化运行时间（含时分）
-  const formatTime = (ts: string) => {
-    const date = new Date(ts);
-    return date.toLocaleString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
-  // 格式化数据日期（仅日期）
-  const formatDate = (ts: string) => {
-    const date = new Date(ts);
-    return date.toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-  };
 
   // 获取风险灯颜色样式
   const getRiskLightStyle = (light?: string | null) => {
@@ -189,7 +169,7 @@ export default function HistoryPage() {
                               {record.data_ts ? formatDate(record.data_ts) : formatDate(record.run_ts)}
                             </div>
                             <div className="text-xs text-zinc-500 mt-1">
-                              运行于 {formatTime(record.run_ts)} · {record.execution_time_ms}ms
+                              运行于 {formatDateTime(record.run_ts)} · {record.execution_time_ms}ms
                             </div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-zinc-600" />

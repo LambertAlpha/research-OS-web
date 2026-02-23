@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { RefreshCw, Calendar, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 interface HeaderProps {
   onRunModel: (date?: string) => Promise<void>;
@@ -42,7 +42,7 @@ export function Header({ onRunModel, isLoading, lastUpdate }: HeaderProps) {
               <p className="text-xs text-zinc-500 mt-0.5">
                 最后更新:{" "}
                 <span className="text-zinc-400">
-                  {new Date(lastUpdate).toLocaleString("zh-CN")}
+                  {formatDateTime(lastUpdate)}
                 </span>
               </p>
             )}

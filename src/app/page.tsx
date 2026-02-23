@@ -19,6 +19,7 @@ import {
   getRiskLightColor,
   getRiskLightLabel,
   formatNumber,
+  formatDate,
 } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint } from "@/types/api";
 import { Rocket, AlertTriangle, TrendingUp, BarChart3, RefreshCw } from "lucide-react";
@@ -149,7 +150,7 @@ export default function OverviewPage() {
             <p className="text-zinc-500 text-sm ml-12">
               数据日期:{" "}
               <span className="text-zinc-400">
-                {new Date(modelOutput.data_ts).toLocaleDateString("zh-CN")}
+                {formatDate(modelOutput.data_ts)}
               </span>
             </p>
           )}

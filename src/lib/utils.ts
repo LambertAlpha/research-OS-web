@@ -71,11 +71,31 @@ export function getGateStatusColor(status?: string | null): string {
   }
 }
 
+/**
+ * 格式化日期（仅日期，强制 UTC+8 北京时间）
+ * 输出示例：2026/02/22
+ */
 export function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString("zh-CN", {
     year: "numeric",
-    month: "long",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Shanghai",
+  });
+}
+
+/**
+ * 格式化日期时间（含时分，强制 UTC+8 北京时间）
+ * 输出示例：2026/02/22 23:14
+ */
+export function formatDateTime(date: string | Date): string {
+  return new Date(date).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Shanghai",
   });
 }
 
