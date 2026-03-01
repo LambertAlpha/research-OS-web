@@ -12,27 +12,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WEEKDAYS, getDaysInMonth, getFirstDayOfWeek, toDateStr } from "@/lib/calendar";
 
 interface DatePickerProps {
   selectedDate?: string; // YYYY-MM-DD
   availableDates: string[]; // YYYY-MM-DD[]
   onDateSelect: (date: string) => void;
-}
-
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfWeek(year: number, month: number): number {
-  // 0=Sunday => shift to Monday-based (0=Mon, 6=Sun)
-  const day = new Date(year, month, 1).getDay();
-  return day === 0 ? 6 : day - 1;
-}
-
-function toDateStr(year: number, month: number, day: number): string {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export function DatePicker({

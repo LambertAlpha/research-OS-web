@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 页面加载时自动请求 /api/model/history，用户可选择查看详情或运行新模型。
- * [OUTPUT]: (JSX) - 运行历史页面，含历史记录列表、触发规则表格、告警信息列表、运行元数据摘要。
+ * [INPUT]: 页面加载时自动请求 /api/model/history（180天），用户通过日历热力图选择日期查看详情。
+ * [OUTPUT]: (JSX) - 运行历史页面，左侧日历热力图（按 risk_light 着色），右侧触发规则表格、告警信息列表、运行元数据摘要。
  * [POS]: 历史路由 (/history)。从数据库获取历史记录，展示 ModelOutput 中的 triggered_rules 和 alerts。
  *
  * [PROTOCOL]:
@@ -11,10 +11,11 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
+import { CalendarHeatmap } from "@/components/CalendarHeatmap";
 import apiClient from "@/lib/api";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import type { ModelOutput, HistoryRecord } from "@/types/api";
-import { History, Search, AlertTriangle, BarChart3, Clock, ChevronRight, RefreshCw } from "lucide-react";
+import { History, Search, AlertTriangle, BarChart3, RefreshCw } from "lucide-react";
 
 export default function HistoryPage() {
   const [isRunning, setIsRunning] = useState(false);
@@ -59,7 +60,7 @@ export default function HistoryPage() {
   const loadHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
-      const response = await apiClient.getHistory(30);
+      const response = await apiClient.getHistory(180);
       setHistoryRecords(response.records);
     } catch (error) {
       console.error("Failed to load history:", error);
@@ -72,21 +73,6 @@ export default function HistoryPage() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
-
-  // 加载特定记录的详情
-  const loadRecordDetail = useCallback(async (record: HistoryRecord) => {
-    setSelectedRecord(record);
-    setIsLoadingDetail(true);
-    try {
-      const output = await apiClient.getOutputById(record.run_id);
-      setModelOutput(output);
-    } catch (error) {
-      console.error("Failed to load record detail:", error);
-      setModelOutput(null);
-    } finally {
-      setIsLoadingDetail(false);
-    }
-  }, []);
 
   const handleRunModel = useCallback(async (date?: string) => {
     setIsRunning(true);
@@ -145,79 +131,24 @@ export default function HistoryPage() {
         </div>
 
         <div className="grid grid-cols-12 gap-6">
-          {/* 左侧：历史记录列表 */}
-          <div className="col-span-4">
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-
-              <div className="p-4 border-b border-zinc-800/50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <span className="text-sm font-medium text-zinc-200">历史记录</span>
-                  <span className="text-xs text-zinc-500">({historyRecords.length})</span>
-                </div>
-                <button
-                  onClick={loadHistory}
-                  disabled={isLoadingHistory}
-                  className="p-1.5 rounded-lg hover:bg-zinc-800/50 transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={cn("w-4 h-4 text-zinc-400", isLoadingHistory && "animate-spin")} />
-                </button>
+          {/* 左侧：日历热力图 */}
+          <div className="col-span-12 lg:col-span-5">
+            {isLoadingHistory ? (
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-8 text-center text-zinc-500">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                加载中...
               </div>
-
-              <div className="max-h-[600px] overflow-y-auto">
-                {isLoadingHistory ? (
-                  <div className="p-8 text-center text-zinc-500">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    加载中...
-                  </div>
-                ) : historyRecords.length === 0 ? (
-                  <div className="p-8 text-center text-zinc-500">
-                    暂无历史记录
-                  </div>
-                ) : (
-                  <div className="divide-y divide-zinc-800/30">
-                    {historyRecords.map((record) => (
-                      <button
-                        key={record.run_id}
-                        onClick={() => loadRecordDetail(record)}
-                        className={cn(
-                          "w-full p-4 text-left transition-colors hover:bg-zinc-800/30",
-                          selectedRecord?.run_id === record.run_id && "bg-zinc-800/50"
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-mono text-zinc-500">
-                            {record.run_id.slice(0, 8)}...
-                          </span>
-                          <span className={cn(
-                            "text-xs px-2 py-0.5 rounded-full border",
-                            getRiskLightStyle(record.risk_light)
-                          )}>
-                            {record.risk_light || "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm text-zinc-200">
-                              {record.data_ts ? formatDate(record.data_ts) : formatDate(record.run_ts)}
-                            </div>
-                            <div className="text-xs text-zinc-500 mt-1">
-                              运行于 {formatDateTime(record.run_ts)} · {record.execution_time_ms}ms
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-zinc-600" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            ) : (
+              <CalendarHeatmap
+                records={historyRecords}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+              />
+            )}
           </div>
 
           {/* 右侧：详情展示 */}
-          <div className="col-span-8">
+          <div className="col-span-12 lg:col-span-7">
             {isLoadingDetail ? (
               <div className="flex flex-col items-center justify-center py-24">
                 <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mb-4" />
@@ -232,11 +163,11 @@ export default function HistoryPage() {
                   <div className="absolute inset-0 rounded-2xl bg-amber-500/10 blur-xl" />
                 </div>
                 <h2 className="text-xl font-semibold text-zinc-200 mb-2">
-                  {historyRecords.length > 0 ? "选择一条记录查看详情" : "暂无数据"}
+                  {historyRecords.length > 0 ? "选择日期查看详情" : "暂无数据"}
                 </h2>
                 <p className="text-zinc-500 text-sm">
                   {historyRecords.length > 0
-                    ? "点击左侧列表中的记录"
+                    ? "点击日历中有色日期查看详情"
                     : "点击「运行模型」按钮生成数据"}
                 </p>
               </div>
