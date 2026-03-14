@@ -240,6 +240,64 @@ export interface HealthCheck {
 }
 
 // ============================================================================
+// US Equity Model Types
+// ============================================================================
+
+export interface RegimeFactor {
+  name: string;
+  value: any;
+  vote: string;
+  detail?: string;
+}
+
+export interface Regime {
+  code: string; // BULL / LATE_CYCLE / BEAR / EARLY_RECOVERY / TRANSITION
+  name: string;
+  factors?: Record<string, any>;
+  position_cap?: number;
+}
+
+export interface ModuleScore {
+  name: string;
+  score: number;
+  weight: number;
+}
+
+export interface Allocation {
+  equity_pct: number;
+  bond_pct: number;
+  cash_pct: number;
+}
+
+export interface SectorBias {
+  overweight: string[];
+  underweight: string[];
+  rationale?: string;
+}
+
+export interface RiskManagement {
+  drawdown_pct: number;
+  level: string;
+  action: string;
+}
+
+export interface EquityOutput {
+  run_id: string;
+  run_ts: string;
+  data_ts: string;
+  model_version: string;
+  regime: Regime;
+  modules: ModuleScore[];
+  weighted_score: number;
+  allocation: Allocation;
+  sector_bias: SectorBias;
+  risk_management: RiskManagement;
+  report_summary?: string;
+  alerts?: Alert[];
+  triggered_rules?: Record<string, any>;
+}
+
+// ============================================================================
 // 历史记录类型
 // ============================================================================
 

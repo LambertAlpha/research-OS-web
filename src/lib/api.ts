@@ -13,6 +13,7 @@ import type {
   MarketData,
   LiquidityOutput,
   MacroOutput,
+  EquityOutput,
   HealthCheck,
   HistoryResponse,
   GateStatus,
@@ -163,6 +164,42 @@ class ApiClient {
       params.append("model_type", modelType);
     }
     return this.request(`/api/model/history?${params.toString()}`);
+  }
+
+  /**
+   * 获取美股模型输出
+   */
+  async getEquityOutput(): Promise<EquityOutput | null> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await this.request<any>("/api/equity");
+      if (res?.equity) {
+        const d = res;
+        const equity = d.equity;
+        return {
+          run_id: d.run_id || "",
+          run_ts: d.run_ts || "",
+          data_ts: d.data_ts || "",
+          model_version: d.model_version || "",
+          regime: equity.regime || { code: "TRANSITION", name: "转换期" },
+          modules: equity.modules || [],
+          weighted_score: equity.weighted_score ?? 0,
+          allocation: equity.allocation || { equity_pct: 50, bond_pct: 25, cash_pct: 25 },
+          sector_bias: equity.sector_bias || { overweight: [], underweight: [] },
+          risk_management: {
+            drawdown_pct: equity.risk_management?.spx_drawdown_pct ?? equity.risk_management?.drawdown_pct ?? 0,
+            level: equity.risk_management?.label ?? equity.risk_management?.level ?? "NORMAL",
+            action: equity.risk_management?.action ?? "正常",
+          },
+          report_summary: d.report_summary || "",
+          alerts: d.alerts || [],
+          triggered_rules: d.triggered_rules || {},
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   /**
