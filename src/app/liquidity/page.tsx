@@ -75,12 +75,13 @@ export default function LiquidityPage() {
   // 日期选择回调
   const handleDateSelect = useCallback(
     async (date: string) => {
+      setSelectedDate(date);
+
       const record = historyRecords.current.find(
         (r) => r.data_ts.split("T")[0] === date
       );
-      if (!record) return;
+      if (!record) return; // 无历史数据，仅切换日期，用户可点"运行模型"
 
-      setSelectedDate(date);
       setIsLoading(true);
       try {
         const output = await apiClient.getOutputById(record.run_id);

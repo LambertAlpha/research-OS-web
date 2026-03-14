@@ -35,12 +35,17 @@ export default function HistoryPage() {
   // 日期选择回调
   const handleDateSelect = useCallback(
     async (date: string) => {
+      setSelectedDate(date);
+
       const record = historyRecords.find(
         (r) => r.data_ts.split("T")[0] === date
       );
-      if (!record) return;
+      if (!record) {
+        setSelectedRecord(null);
+        setModelOutput(null);
+        return; // 无历史数据，仅切换日期
+      }
 
-      setSelectedDate(date);
       setSelectedRecord(record);
       setIsLoadingDetail(true);
       try {

@@ -26,7 +26,6 @@ export function DatePicker({
   onDateSelect,
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Parse selected date to initialize viewMonth
@@ -55,13 +54,6 @@ export function DatePicker({
     return () => document.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   const prevMonth = useCallback(() => {
     setViewMonth((m) => {
       if (m === 0) {
@@ -84,12 +76,8 @@ export function DatePicker({
 
   const handleDayClick = useCallback(
     (dateStr: string) => {
-      if (availableSet.current.has(dateStr)) {
-        onDateSelect(dateStr);
-        setIsOpen(false);
-      } else {
-        setToast("该日期暂无数据");
-      }
+      onDateSelect(dateStr);
+      setIsOpen(false);
     },
     [onDateSelect]
   );
@@ -193,12 +181,6 @@ export function DatePicker({
         </div>
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="absolute right-0 top-full mt-2 z-[60] px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs whitespace-nowrap animate-fade-in">
-          {toast}
-        </div>
-      )}
     </div>
   );
 }
