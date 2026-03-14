@@ -179,7 +179,7 @@ class ApiClient {
         return {
           run_id: d.run_id || "",
           run_ts: d.run_ts || "",
-          data_ts: d.data_ts || "",
+          data_ts: (d.data_ts || "").replace(" ", "T"),
           model_version: d.model_version || "",
           regime: equity.regime || { code: "TRANSITION", name: "转换期" },
           modules: equity.modules || [],

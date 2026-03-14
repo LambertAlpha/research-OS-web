@@ -125,7 +125,7 @@ export default function EquityPage() {
         ]);
         setEquityOutput(output);
         if (output?.data_ts) {
-          setSelectedDate(output.data_ts.split("T")[0]);
+          setSelectedDate(output.data_ts.substring(0, 10));
         }
 
         historyRecords.current = history.records;
@@ -168,7 +168,7 @@ export default function EquityPage() {
       const output = await apiClient.getEquityOutput();
       setEquityOutput(output);
       if (output?.data_ts) {
-        setSelectedDate(output.data_ts.split("T")[0]);
+        setSelectedDate(output.data_ts.substring(0, 10));
       }
 
       const history = await apiClient
