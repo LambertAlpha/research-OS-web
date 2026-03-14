@@ -105,10 +105,32 @@ function getRiskLevelColor(level: string): string {
 // 页面组件
 // ============================================================================
 
+// sessionStorage 缓存，避免导航切换时数据丢失
+const CACHE_KEY = "equity_output_cache";
+
+function getCachedOutput(): EquityOutput | null {
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedOutput(output: EquityOutput | null) {
+  try {
+    if (output) {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(output));
+    }
+  } catch {
+    // sessionStorage 不可用时静默失败
+  }
+}
+
 export default function EquityPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [equityOutput, setEquityOutput] = useState<EquityOutput | null>(null);
+  const [equityOutput, setEquityOutput] = useState<EquityOutput | null>(getCachedOutput);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const historyRecords = useRef<HistoryRecord[]>([]);
@@ -123,7 +145,10 @@ export default function EquityPage() {
             .getHistory(365)
             .catch(() => ({ records: [] as HistoryRecord[], total: 0, days: 365 })),
         ]);
-        setEquityOutput(output);
+        if (output) {
+          setEquityOutput(output);
+          setCachedOutput(output);
+        }
         if (output?.data_ts) {
           setSelectedDate(output.data_ts.substring(0, 10));
         }
@@ -138,7 +163,7 @@ export default function EquityPage() {
         ];
         setAvailableDates(dates);
       } catch {
-        console.log("No equity output available");
+        console.log("No equity output available, using cache");
       } finally {
         setIsLoading(false);
       }
@@ -152,7 +177,10 @@ export default function EquityPage() {
     setIsLoading(true);
     try {
       const output = await apiClient.getEquityOutput();
-      setEquityOutput(output);
+      if (output) {
+        setEquityOutput(output);
+        setCachedOutput(output);
+      }
     } catch (error) {
       console.error("Failed to load equity output for date:", error);
     } finally {
@@ -166,7 +194,10 @@ export default function EquityPage() {
     try {
       await apiClient.runModel(date);
       const output = await apiClient.getEquityOutput();
-      setEquityOutput(output);
+      if (output) {
+        setEquityOutput(output);
+        setCachedOutput(output);
+      }
       if (output?.data_ts) {
         setSelectedDate(output.data_ts.substring(0, 10));
       }
