@@ -2,6 +2,7 @@
  * [INPUT]: (endpoint, options?) - API 端点路径和请求配置。
  * [OUTPUT]: (Promise<T>) - 类型安全的 API 响应数据，或抛出 Error。
  * [POS]: 位于 /lib，被所有页面组件引用。单例 ApiClient 封装所有后端 API 调用，通过 Next.js rewrite 代理转发请求。
+ *        新增 getModelRegistry(), getIndicatorCatalog(), getAlertHistory() 方法。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
@@ -17,6 +18,9 @@ import type {
   HealthCheck,
   HistoryResponse,
   GateStatus,
+  ModelVersionRecord,
+  IndicatorRecord,
+  AlertRecord,
 } from "@/types/api";
 
 /**
@@ -345,6 +349,26 @@ class ApiClient {
       execution_time_ms: raw.execution_time_ms ?? 0,
       status: raw.status ?? "UNKNOWN",
     };
+  }
+  /**
+   * 获取模型注册表
+   */
+  async getModelRegistry(): Promise<{ models: ModelVersionRecord[]; total: number }> {
+    return this.request("/api/model/registry");
+  }
+
+  /**
+   * 获取指标字典
+   */
+  async getIndicatorCatalog(): Promise<{ indicators: IndicatorRecord[]; total: number }> {
+    return this.request("/api/indicators");
+  }
+
+  /**
+   * 获取告警历史
+   */
+  async getAlertHistory(): Promise<{ alerts: AlertRecord[]; total: number }> {
+    return this.request("/api/alerts/history");
   }
 }
 

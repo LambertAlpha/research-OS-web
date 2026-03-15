@@ -1,6 +1,6 @@
 /**
  * [INPUT]: N/A — 纯类型定义文件，无运行时输入。
- * [OUTPUT]: TypeScript 接口/类型导出 — ApiResponse, GateStatus, LiquidityOutput(v3.0), MacroOutput(v4.0), ModelOutput(v2.0), MarketData 等。
+ * [OUTPUT]: TypeScript 接口/类型导出 — ApiResponse, GateStatus, LiquidityOutput(v3.0), MacroOutput(v4.0), ModelOutput(v2.0), MarketData, ModelVersionRecord, IndicatorRecord, AlertRecord 等。
  * [POS]: 位于 /types，被 lib/api.ts 和所有页面/组件引用。前后端数据契约的唯一真相源，与后端 Python 模型输出结构一一对应。
  *
  * [PROTOCOL]:
@@ -320,4 +320,52 @@ export interface HistoryResponse {
   total: number;
   days: number;
   records: HistoryRecord[];
+}
+
+// ============================================================================
+// Model Registry 类型
+// ============================================================================
+
+export interface ModelVersionRecord {
+  version_code: string;
+  model_type: string;
+  status: string;
+  is_production: boolean;
+  release_notes?: string;
+  created_by?: string;
+  created_at: string;
+  activated_at?: string;
+}
+
+// ============================================================================
+// Indicator Catalog 类型
+// ============================================================================
+
+export interface IndicatorRecord {
+  symbol: string;
+  display_name: string;
+  description?: string;
+  source: string;
+  source_symbol?: string;
+  frequency: string;
+  model_module: string;
+  weight?: number;
+  unit?: string;
+  thresholds?: Record<string, unknown>;
+  is_active: boolean;
+}
+
+// ============================================================================
+// Alert History 类型
+// ============================================================================
+
+export interface AlertRecord {
+  alert_id: number;
+  run_id: string;
+  alert_ts: string;
+  alert_type: string;
+  alert_level: string;
+  alert_message: string;
+  trigger_rule?: string;
+  acknowledged: boolean;
 }

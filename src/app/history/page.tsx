@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 页面加载时自动请求 /api/model/history（180天），用户通过日历热力图选择日期查看详情。
- * [OUTPUT]: (JSX) - 运行历史页面，左侧日历热力图（按 risk_light 着色），右侧触发规则表格、告警信息列表、运行元数据摘要。
- * [POS]: 历史路由 (/history)。从数据库获取历史记录，展示 ModelOutput 中的 triggered_rules 和 alerts。
+ * [INPUT]: 页面加载时自动请求 /api/model/history（180天）和 /api/alerts/history，用户通过日历热力图选择日期查看详情。
+ * [OUTPUT]: (JSX) - 运行历史页面，上半部分：左侧日历热力图（按 risk_light 着色），右侧触发规则表格、告警信息列表、运行元数据摘要。下半部分：告警历史时间线。
+ * [POS]: 历史路由 (/history)。从数据库获取历史记录，展示 ModelOutput 中的 triggered_rules 和 alerts，以及 alert_history 表的告警记录。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
@@ -14,8 +14,8 @@ import { Header } from "@/components/Header";
 import { CalendarHeatmap } from "@/components/CalendarHeatmap";
 import apiClient from "@/lib/api";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
-import type { ModelOutput, HistoryRecord } from "@/types/api";
-import { History, Search, AlertTriangle, BarChart3, RefreshCw } from "lucide-react";
+import type { ModelOutput, HistoryRecord, AlertRecord } from "@/types/api";
+import { History, Search, AlertTriangle, BarChart3, RefreshCw, Bell } from "lucide-react";
 
 export default function HistoryPage() {
   const [isRunning, setIsRunning] = useState(false);
@@ -25,6 +25,8 @@ export default function HistoryPage() {
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
   const [modelOutput, setModelOutput] = useState<ModelOutput | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | undefined>();
+  const [alertHistory, setAlertHistory] = useState<AlertRecord[]>([]);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
 
   // 从历史记录中提取可用日期
   const availableDates = useMemo(
@@ -74,10 +76,24 @@ export default function HistoryPage() {
     }
   }, []);
 
-  // 页面加载时获取历史记录
+  // 加载告警历史
+  const loadAlertHistory = useCallback(async () => {
+    setIsLoadingAlerts(true);
+    try {
+      const response = await apiClient.getAlertHistory();
+      setAlertHistory(response.alerts);
+    } catch (error) {
+      console.error("Failed to load alert history:", error);
+    } finally {
+      setIsLoadingAlerts(false);
+    }
+  }, []);
+
+  // 页面加载时获取历史记录和告警历史
   useEffect(() => {
     loadHistory();
-  }, [loadHistory]);
+    loadAlertHistory();
+  }, [loadHistory, loadAlertHistory]);
 
   const handleRunModel = useCallback(async (date?: string) => {
     setIsRunning(true);
@@ -365,6 +381,101 @@ export default function HistoryPage() {
               </>
             )}
           </div>
+        </div>
+
+        {/* 告警历史区域 */}
+        <div className="mt-8">
+          <h2 className="section-title">
+            <Bell className="w-5 h-5 text-amber-400" />
+            告警历史
+          </h2>
+
+          {isLoadingAlerts ? (
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-8 text-center text-zinc-500">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              加载告警历史...
+            </div>
+          ) : alertHistory.length === 0 ? (
+            <div className="relative rounded-2xl p-8 text-center bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-emerald-500/20 backdrop-blur-xl text-emerald-400">
+              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+              暂无告警记录
+            </div>
+          ) : (
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
+              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+              <div className="divide-y divide-zinc-800/30">
+                {alertHistory.map((alert) => (
+                  <div
+                    key={alert.alert_id}
+                    className={cn(
+                      "flex items-start gap-4 px-5 py-4 transition-colors duration-200",
+                      alert.alert_level === "CRITICAL"
+                        ? "bg-red-500/5 hover:bg-red-500/10"
+                        : alert.alert_level === "WARNING"
+                          ? "bg-amber-500/5 hover:bg-amber-500/10"
+                          : "bg-cyan-500/5 hover:bg-cyan-500/10"
+                    )}
+                  >
+                    {/* 时间线指示器 */}
+                    <div className="flex flex-col items-center pt-1">
+                      <span
+                        className={cn(
+                          "w-3 h-3 rounded-full shrink-0",
+                          alert.alert_level === "CRITICAL"
+                            ? "bg-red-500 shadow-lg shadow-red-500/50"
+                            : alert.alert_level === "WARNING"
+                              ? "bg-amber-500 shadow-lg shadow-amber-500/50"
+                              : "bg-cyan-500 shadow-lg shadow-cyan-500/50"
+                        )}
+                      />
+                      <div className="w-px h-full bg-zinc-800/50 mt-1" />
+                    </div>
+
+                    {/* 告警内容 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border",
+                            alert.alert_level === "CRITICAL"
+                              ? "bg-red-500/20 text-red-400 border-red-500/30"
+                              : alert.alert_level === "WARNING"
+                                ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                                : "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                          )}
+                        >
+                          {alert.alert_level}
+                        </span>
+                        <span className="text-xs text-zinc-500 font-mono">
+                          [{alert.alert_type}]
+                        </span>
+                        <span className="text-xs text-zinc-600 ml-auto shrink-0">
+                          {alert.alert_ts ? formatDateTime(alert.alert_ts) : "-"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-300">
+                        {alert.alert_message}
+                      </p>
+                      {alert.trigger_rule && (
+                        <p className="text-xs text-zinc-500 mt-1">
+                          触发规则: {alert.trigger_rule}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 确认状态 */}
+                    <div className="shrink-0 pt-1">
+                      {alert.acknowledged ? (
+                        <span className="text-xs text-emerald-500">已确认</span>
+                      ) : (
+                        <span className="text-xs text-zinc-600">未确认</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
