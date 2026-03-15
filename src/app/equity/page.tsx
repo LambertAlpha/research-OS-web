@@ -162,7 +162,7 @@ function getRiskLevelColor(level: string): string {
 
 export default function EquityPage() {
   const [isRunning, setIsRunning] = useState(false);
-  const [expandedModule, setExpandedModule] = useState<string | "all">("all");
+  const [expandedModule, setExpandedModule] = useState<string | null>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [equityOutput, setEquityOutput] = useState<EquityOutput | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);

@@ -174,6 +174,9 @@ export default function IndicatorsPage() {
                     名称
                   </th>
                   <th className="text-left py-4 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    说明
+                  </th>
+                  <th className="text-left py-4 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     来源
                   </th>
                   <th className="text-left py-4 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -190,7 +193,7 @@ export default function IndicatorsPage() {
               <tbody>
                 {filteredIndicators.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-zinc-500">
+                    <td colSpan={8} className="py-16 text-center text-zinc-500">
                       {searchQuery ? "未找到匹配的指标" : "暂无指标数据"}
                     </td>
                   </tr>
@@ -221,6 +224,9 @@ export default function IndicatorsPage() {
                           <td className="py-4 px-5 text-sm text-zinc-200">
                             {ind.display_name}
                           </td>
+                          <td className="py-4 px-5 text-sm text-zinc-500 max-w-xs">
+                            {ind.description || "—"}
+                          </td>
                           <td className="py-4 px-5 text-sm text-zinc-400">
                             {ind.source}
                           </td>
@@ -245,7 +251,7 @@ export default function IndicatorsPage() {
                         </tr>
                         {isExpanded && (
                           <tr key={`${ind.symbol}-detail`} className="bg-zinc-900/60">
-                            <td colSpan={7} className="px-8 py-5">
+                            <td colSpan={8} className="px-8 py-5">
                               <div className="grid grid-cols-3 gap-6">
                                 {/* 描述 */}
                                 <div>
