@@ -115,7 +115,6 @@ export default function EquityPage() {
 
   // 页面加载时获取最新数据
   useEffect(() => {
-    console.log("[equity] useEffect fired, fetching data...");
     const loadLatest = async () => {
       try {
         const [output, history] = await Promise.all([
@@ -124,7 +123,6 @@ export default function EquityPage() {
             .getHistory(365)
             .catch(() => ({ records: [] as HistoryRecord[], total: 0, days: 365 })),
         ]);
-        console.log("[equity] getEquityOutput result:", output ? "got data" : "null");
         setEquityOutput(output);
         if (output?.data_ts) {
           setSelectedDate(output.data_ts.substring(0, 10));
