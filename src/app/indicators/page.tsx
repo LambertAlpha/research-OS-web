@@ -17,25 +17,24 @@ import type { IndicatorRecord } from "@/types/api";
 import { BookOpen, RefreshCw, Search, ChevronDown, ChevronRight } from "lucide-react";
 
 /** 模块筛选选项 */
-const MODULE_FILTERS = [
-  "All",
-  "Liquidity",
-  "Layer1",
-  "Layer2",
-  "Layer3",
-  "Execution",
-  "Correction",
-  "Common",
-] as const;
-
 /** 模块对应的颜色 */
 const MODULE_COLORS: Record<string, string> = {
+  // 流动性模型
   Liquidity: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30",
+  // 宏观模型
   Layer1: "text-amber-400 bg-amber-500/10 border-amber-500/30",
   Layer2: "text-violet-400 bg-violet-500/10 border-violet-500/30",
   Layer3: "text-red-400 bg-red-500/10 border-red-500/30",
   Execution: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
   Correction: "text-orange-400 bg-orange-500/10 border-orange-500/30",
+  // 美股模型
+  Equity_MacroOverlay: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+  Equity_Breadth: "text-teal-400 bg-teal-500/10 border-teal-500/30",
+  Equity_PriceVolume: "text-indigo-400 bg-indigo-500/10 border-indigo-500/30",
+  Equity_Options: "text-pink-400 bg-pink-500/10 border-pink-500/30",
+  Equity_FundFlow: "text-sky-400 bg-sky-500/10 border-sky-500/30",
+  Equity_Sentiment: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+  // 共用
   Common: "text-zinc-400 bg-zinc-500/10 border-zinc-500/30",
 };
 
@@ -44,6 +43,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
   D: "日频",
   W: "周频",
   M: "月频",
+  Q: "季频",
   I: "日内",
 };
 
@@ -95,8 +95,8 @@ export default function IndicatorsPage() {
 
   /** 获取可用的模块列表（从数据中动态提取） */
   const availableModules = useMemo(() => {
-    const modules = new Set(indicators.map((ind) => ind.model_module));
-    return MODULE_FILTERS.filter((m) => m === "All" || modules.has(m));
+    const modules = [...new Set(indicators.map((ind) => ind.model_module))].sort();
+    return ["All", ...modules];
   }, [indicators]);
 
   return (
@@ -113,7 +113,7 @@ export default function IndicatorsPage() {
             <h1 className="text-2xl font-bold text-zinc-100">Indicator Dictionary</h1>
           </div>
           <p className="text-zinc-500 text-sm ml-12">
-            指标字典 — 共 {indicators.length} 个指标
+            指标字典 — 共 {indicators.length} 个指标（{indicators.filter(i => i.is_active).length} 已接入 / {indicators.filter(i => !i.is_active).length} 待接入）
           </p>
         </div>
 
@@ -201,6 +201,7 @@ export default function IndicatorsPage() {
                   filteredIndicators.map((ind, i) => {
                     const isExpanded = expandedRow === ind.symbol;
                     const moduleColor = MODULE_COLORS[ind.model_module] || MODULE_COLORS.Common;
+                    const isPending = !ind.is_active;
 
                     return (
                       <Fragment key={ind.symbol}>
@@ -208,7 +209,8 @@ export default function IndicatorsPage() {
                           onClick={() => setExpandedRow(isExpanded ? null : ind.symbol)}
                           className={cn(
                             "border-b border-zinc-800/30 transition-colors duration-200 hover:bg-zinc-800/20 cursor-pointer",
-                            i % 2 === 0 ? "bg-zinc-900/30" : ""
+                            i % 2 === 0 ? "bg-zinc-900/30" : "",
+                            isPending && "opacity-50"
                           )}
                         >
                           <td className="py-4 px-3 text-zinc-500">
@@ -218,8 +220,13 @@ export default function IndicatorsPage() {
                               <ChevronRight className="w-4 h-4" />
                             )}
                           </td>
-                          <td className="py-4 px-5 text-sm text-cyan-400 font-mono font-medium">
-                            {ind.symbol}
+                          <td className="py-4 px-5 text-sm font-mono font-medium">
+                            <span className={isPending ? "text-zinc-500" : "text-cyan-400"}>{ind.symbol}</span>
+                            {isPending && (
+                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700">
+                                待接入
+                              </span>
+                            )}
                           </td>
                           <td className="py-4 px-5 text-sm text-zinc-200">
                             {ind.display_name}
