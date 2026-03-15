@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   FileText,
   RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 
 // ============================================================================
@@ -54,6 +55,60 @@ const REGIME_COLOR_MAP: Record<string, string> = {
   LATE_CYCLE: "#f97316",  // orange-500
   BEAR: "#ef4444",        // red-500
 };
+
+// 模块名 → triggered_rules key 映射
+const MODULE_TRIGGER_KEY: Record<string, string> = {
+  fund_flow: "module_fund_flow",
+  macro_overlay: "module_macro_overlay",
+  market_breadth: "module_breadth",
+  market_sentiment: "module_sentiment",
+  price_volume: "module_price_volume",
+  options_market: "module_options",
+};
+
+// 子指标中文标签
+const SUB_INDICATOR_LABELS: Record<string, string> = {
+  // 宏观覆盖层
+  fed_funds: "联邦基金利率",
+  yield_curve: "收益率曲线 2Y-10Y",
+  real_rate: "实际利率 (TIPS)",
+  credit_spread: "信用利差 (HY OAS)",
+  ism_pmi: "ISM 制造业 PMI",
+  initial_claims: "初领失业金",
+  lei: "LEI 领先指标",
+  // 资金流
+  hyg_trend: "HYG 高收益债 ETF",
+  lqd_trend: "LQD 投资级债 ETF",
+  // 市场宽度
+  rsp_spy_trend: "RSP/SPY 等权比值",
+  sector_count: "板块参与度 (站上200DMA)",
+  // 期权
+  vix_term_structure: "VIX 期限结构",
+  vvix: "VVIX 波动率的波动率",
+  vix_monthly_avg: "VIX 月均值",
+  // 价量
+  SPX: "S&P 500",
+  NDX: "Nasdaq 100",
+  RUT: "Russell 2000",
+};
+
+// 格式化子指标值
+function formatSubValue(key: string, value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if ("above" in obj && "score" in obj) {
+      const above = obj.above ? "↑ 在200DMA上方" : "↓ 在200DMA下方";
+      return `${above} → ${Number(obj.score) > 0 ? "+" : ""}${Number(obj.score).toFixed(1)}`;
+    }
+    return JSON.stringify(value);
+  }
+  if (typeof value === "number") return value.toFixed(2);
+  if (value === "rising") return "↑ 上升";
+  if (value === "falling") return "↓ 下跌";
+  if (value === "stable") return "→ 持平";
+  return String(value);
+}
 
 // ============================================================================
 // 工具函数
@@ -107,6 +162,7 @@ function getRiskLevelColor(level: string): string {
 
 export default function EquityPage() {
   const [isRunning, setIsRunning] = useState(false);
+  const [expandedModule, setExpandedModule] = useState<string | "all">("all");
   const [isLoading, setIsLoading] = useState(true);
   const [equityOutput, setEquityOutput] = useState<EquityOutput | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -313,10 +369,17 @@ export default function EquityPage() {
                   加权总分
                 </div>
                 <div
-                  className="text-4xl font-bold mb-3"
+                  className="text-4xl font-bold mb-1"
                   style={{ color: getScoreColor(equityOutput.weighted_score) }}
                 >
-                  {equityOutput.weighted_score.toFixed(2)}
+                  {equityOutput.weighted_score > 0 ? "+" : ""}{equityOutput.weighted_score.toFixed(2)}
+                </div>
+                <div className="text-xs text-zinc-500 mb-3">
+                  {equityOutput.weighted_score >= 1.5 ? "强烈看多" :
+                   equityOutput.weighted_score >= 0.5 ? "偏多" :
+                   equityOutput.weighted_score > -0.5 ? "中性" :
+                   equityOutput.weighted_score > -1.5 ? "偏空" : "强烈看空"}
+                  {" · 范围 -2 到 +2"}
                 </div>
                 {/* 分数条 */}
                 <div className="relative h-2 rounded-full bg-zinc-800 overflow-hidden">
@@ -412,43 +475,83 @@ export default function EquityPage() {
                   模块评分
                 </h2>
                 <div className="grid grid-cols-3 gap-4">
-                  {modules.map((mod) => (
-                    <div
-                      key={mod.name}
-                      className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl hover:border-zinc-700/50 transition-all duration-300"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <div className="text-sm font-medium text-zinc-200">
-                            {getModuleName(mod.name)}
+                  {modules.map((mod) => {
+                    const triggerKey = MODULE_TRIGGER_KEY[mod.name];
+                    const triggerData = triggerKey ? equityOutput?.triggered_rules?.[triggerKey] : null;
+                    const subInputs = triggerData?.input_values || {};
+                    const isExpanded = expandedModule === "all" || expandedModule === mod.name;
+                    const hasSubData = Object.keys(subInputs).length > 0;
+
+                    return (
+                      <div
+                        key={mod.name}
+                        className={cn(
+                          "group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border backdrop-blur-xl transition-all duration-300",
+                          hasSubData ? "cursor-pointer hover:border-zinc-700/50" : "",
+                          isExpanded ? "border-zinc-600/50" : "border-zinc-800/50"
+                        )}
+                        onClick={() => hasSubData && setExpandedModule(isExpanded ? null : mod.name)}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <div className="text-sm font-medium text-zinc-200 flex items-center gap-1.5">
+                              {getModuleName(mod.name)}
+                              {hasSubData && (
+                                <ChevronDown
+                                  className={cn(
+                                    "w-3.5 h-3.5 text-zinc-500 transition-transform duration-200",
+                                    isExpanded && "rotate-180"
+                                  )}
+                                />
+                              )}
+                            </div>
+                            <div className="text-xs text-zinc-500">
+                              权重: {(mod.weight * 100).toFixed(0)}%
+                            </div>
                           </div>
-                          <div className="text-xs text-zinc-500">
-                            权重: {(mod.weight * 100).toFixed(0)}%
+                          <div
+                            className="text-2xl font-bold"
+                            style={{ color: getScoreColor(mod.score) }}
+                          >
+                            {mod.score > 0 ? "+" : ""}
+                            {mod.score.toFixed(1)}
                           </div>
                         </div>
-                        <div
-                          className="text-2xl font-bold"
-                          style={{ color: getScoreColor(mod.score) }}
-                        >
-                          {mod.score > 0 ? "+" : ""}
-                          {mod.score.toFixed(1)}
+                        {/* 分数条 */}
+                        <div className="relative h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                          <div
+                            className="absolute top-0 h-full rounded-full transition-all duration-500"
+                            style={{
+                              backgroundColor: getScoreColor(mod.score),
+                              left: "50%",
+                              width: `${Math.abs(mod.score) * 25}%`,
+                              transform: mod.score < 0 ? "translateX(-100%)" : "none",
+                            }}
+                          />
+                          <div className="absolute top-0 left-1/2 w-px h-full bg-zinc-600" />
                         </div>
+
+                        {/* 展开：子指标详情 */}
+                        {isExpanded && hasSubData && (
+                          <div className="mt-4 pt-3 border-t border-zinc-800/50 space-y-2">
+                            {Object.entries(subInputs).map(([key, value]) => {
+                              const label = SUB_INDICATOR_LABELS[key] || key;
+                              const displayValue = formatSubValue(key, value);
+
+                              return (
+                                <div key={key} className="flex items-center justify-between text-xs">
+                                  <span className="text-zinc-500">{label}</span>
+                                  <span className="font-mono text-zinc-300">
+                                    {displayValue}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      {/* 分数条 */}
-                      <div className="relative h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                        <div
-                          className="absolute top-0 h-full rounded-full transition-all duration-500"
-                          style={{
-                            backgroundColor: getScoreColor(mod.score),
-                            left: "50%",
-                            width: `${Math.abs(mod.score) * 25}%`,
-                            transform: mod.score < 0 ? "translateX(-100%)" : "none",
-                          }}
-                        />
-                        <div className="absolute top-0 left-1/2 w-px h-full bg-zinc-600" />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
