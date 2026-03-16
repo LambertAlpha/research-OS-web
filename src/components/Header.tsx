@@ -17,6 +17,7 @@ interface HeaderProps {
   onRunModel?: (date?: string) => Promise<void>;
   isLoading?: boolean;
   lastUpdate?: string;
+  dataAsOf?: string;
   availableDates?: string[];
   onDateSelect?: (date: string) => void;
   selectedDate?: string;
@@ -26,6 +27,7 @@ export function Header({
   onRunModel,
   isLoading,
   lastUpdate,
+  dataAsOf,
   availableDates,
   onDateSelect,
   selectedDate,
@@ -52,6 +54,12 @@ export function Header({
                 <span className="text-zinc-400">
                   {formatDateTime(lastUpdate)}
                 </span>
+                {dataAsOf && (
+                  <>
+                    {" · "}数据截至:{" "}
+                    <span className="text-zinc-400">{dataAsOf}</span>
+                  </>
+                )}
               </p>
             )}
           </div>

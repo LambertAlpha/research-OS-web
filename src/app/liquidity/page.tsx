@@ -164,6 +164,7 @@ export default function LiquidityPage() {
         onRunModel={handleRunModel}
         isLoading={isRunning}
         lastUpdate={modelOutput?.run_ts}
+        dataAsOf={modelOutput?.data_as_of}
         availableDates={availableDates}
         onDateSelect={handleDateSelect}
         selectedDate={selectedDate}

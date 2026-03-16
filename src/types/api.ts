@@ -171,8 +171,9 @@ export interface MacroOutput {
 // ============================================================================
 export interface ModelOutput {
   run_id: string;
-  run_ts: string;
-  data_ts: string;
+  run_ts: string;                      // 运行时间（什么时候按的按钮）
+  data_ts: string;                     // 目标数据日期（用户指定要跑哪天的模型）
+  data_as_of?: string;                 // 数据实际截至日期（所有数据源中最旧的最新更新日期）
   model_version: string;
   // 流动性输出 v3.0
   liquidity: LiquidityOutput;
