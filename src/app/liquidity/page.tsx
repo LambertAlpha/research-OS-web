@@ -315,48 +315,116 @@ export default function LiquidityPage() {
 
             <div className="divider" />
 
-            {/* 分项得分 */}
-            {liquidity.component_scores && liquidity.component_scores.length > 0 && (
-              <div className="mb-8">
-                <h2 className="section-title">
-                  <BarChart3 className="w-5 h-5 text-cyan-400" />
-                  分项得分
-                </h2>
-                <div className="grid grid-cols-4 gap-4">
-                  {liquidity.component_scores.map((comp) => (
-                    <div
-                      key={comp.name}
-                      className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl"
-                    >
-                      <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        {comp.name.replace(/_/g, ' ')}
-                        <Tooltip indicatorKey={comp.name.toLowerCase()} placement="top" />
-                      </div>
-                      <div className="text-2xl font-bold text-zinc-200">
-                        {formatNumber(comp.score)}
-                        <span className="text-sm text-zinc-500">/100</span>
-                      </div>
-                      <div className="text-sm text-zinc-400 mt-1">
-                        {comp.label}
-                      </div>
-                      <div className="text-xs text-zinc-500 mt-1">
-                        权重: {(comp.weight * 100).toFixed(0)}%
-                      </div>
-                      {/* 迷你进度条 */}
-                      <div className="mt-2 bg-zinc-800 rounded-full h-1 overflow-hidden">
+            {/* 分项得分 — 按维度分组 */}
+            {liquidity.component_scores && liquidity.component_scores.length > 0 && (() => {
+              const dimensionConfig: Record<string, { label: string; color: string; colorLight: string; totalWeight: number }> = {
+                Quantity:         { label: "水位监测", color: "#06b6d4", colorLight: "rgba(6,182,212,0.15)",  totalWeight: 0.40 },
+                Plumbing:         { label: "管道与压力", color: "#f59e0b", colorLight: "rgba(245,158,11,0.15)", totalWeight: 0.30 },
+                "Volatility Gate": { label: "隐形阀门", color: "#ef4444", colorLight: "rgba(239,68,68,0.15)",  totalWeight: 0.30 },
+              };
+              const grouped: Record<string, typeof liquidity.component_scores> = {};
+              for (const comp of liquidity.component_scores) {
+                if (!comp.category) continue;
+                if (!grouped[comp.category]) grouped[comp.category] = [];
+                grouped[comp.category].push(comp);
+              }
+              return (
+                <div className="mb-8">
+                  <h2 className="section-title">
+                    <BarChart3 className="w-5 h-5 text-cyan-400" />
+                    分项得分
+                  </h2>
+                  <div className="grid grid-cols-3 gap-5">
+                    {Object.entries(dimensionConfig).map(([dim, cfg]) => {
+                      const items = grouped[dim] || [];
+                      if (items.length === 0) return null;
+                      const dimWeightSum = items.reduce((s, c) => s + c.weight, 0);
+                      const dimScore = dimWeightSum > 0
+                        ? items.reduce((s, c) => s + c.score * c.weight, 0) / dimWeightSum
+                        : 0;
+                      return (
                         <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${comp.score}%`,
-                            backgroundColor: comp.score >= 70 ? '#10b981' : comp.score >= 40 ? '#f59e0b' : '#ef4444',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                          key={dim}
+                          className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl"
+                        >
+                          {/* 顶部渐变线 */}
+                          <div
+                            className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
+                            style={{ background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)` }}
+                          />
+
+                          {/* 维度标题 + 汇总分 */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <div className="text-sm font-semibold" style={{ color: cfg.color }}>
+                                {dim}
+                              </div>
+                              <div className="text-xs text-zinc-500">{cfg.label} · 权重 {(cfg.totalWeight * 100).toFixed(0)}%</div>
+                            </div>
+                            <div className="text-right">
+                              <div
+                                className="text-2xl font-bold"
+                                style={{ color: cfg.color, textShadow: `0 0 16px ${cfg.color}40` }}
+                              >
+                                {formatNumber(dimScore)}
+                                <span className="text-sm text-zinc-500">/100</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 维度进度条 */}
+                          <div className="mb-4 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${dimScore}%`, backgroundColor: cfg.color, boxShadow: `0 0 8px ${cfg.color}` }}
+                            />
+                          </div>
+
+                          {/* 子项列表 */}
+                          <div className="space-y-3">
+                            {items.map((comp) => (
+                              <div
+                                key={comp.name}
+                                className="rounded-lg p-3"
+                                style={{ backgroundColor: cfg.colorLight }}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="text-xs text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    {comp.name.replace(/_/g, " ")}
+                                    <Tooltip indicatorKey={comp.name.toLowerCase()} placement="top" />
+                                  </div>
+                                  <div className="text-xs text-zinc-500">
+                                    权重 {(comp.weight * 100).toFixed(0)}%
+                                  </div>
+                                </div>
+                                <div className="flex items-end justify-between">
+                                  <div className="text-lg font-bold text-zinc-200">
+                                    {formatNumber(comp.score)}
+                                    <span className="text-xs text-zinc-500">/100</span>
+                                  </div>
+                                  <div className="text-sm text-zinc-400">{comp.label}</div>
+                                </div>
+                                {/* 子项进度条 */}
+                                <div className="mt-2 bg-zinc-800/60 rounded-full h-1 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${comp.score}%`,
+                                      backgroundColor: cfg.color,
+                                      opacity: 0.7,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="divider" />
 

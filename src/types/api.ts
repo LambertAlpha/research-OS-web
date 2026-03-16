@@ -42,6 +42,7 @@ export interface LiquidityComponentScore {
   score: number;
   label: string;
   value?: number | null;
+  category?: string;
 }
 
 // 流动性模型输出
