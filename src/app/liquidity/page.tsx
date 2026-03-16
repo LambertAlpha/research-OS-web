@@ -324,9 +324,10 @@ export default function LiquidityPage() {
               };
               const grouped: Record<string, typeof liquidity.component_scores> = {};
               for (const comp of liquidity.component_scores) {
-                if (!comp.category) continue;
-                if (!grouped[comp.category]) grouped[comp.category] = [];
-                grouped[comp.category].push(comp);
+                const cat = comp.category;
+                if (!cat) continue;
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(comp);
               }
               return (
                 <div className="mb-8">
