@@ -17,6 +17,7 @@ import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
 import { cn, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
+import { IndicatorDictionary } from "@/components/IndicatorDictionary";
 import {
   Globe,
   BarChart3,
@@ -689,8 +690,13 @@ export default function MacroPage() {
                 )}
               </div>
             </div>
+
           </>
         ) : null}
+
+        {/* 指标字典 — 始终显示，不依赖模型输出 */}
+        <div className="divider" />
+        <IndicatorDictionary modules={["Layer1", "Layer2", "Layer3", "Execution", "Correction"]} defaultExpanded />
       </div>
     </div>
   );

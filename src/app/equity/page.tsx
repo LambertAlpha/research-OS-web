@@ -14,6 +14,7 @@ import { Header } from "@/components/Header";
 import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { EquityOutput, HistoryRecord } from "@/types/api";
+import { IndicatorDictionary } from "@/components/IndicatorDictionary";
 import {
   BarChart3,
   TrendingUp,
@@ -694,8 +695,13 @@ export default function EquityPage() {
                 </div>
               </>
             )}
+
           </>
         )}
+
+        {/* 指标字典 — 始终显示，不依赖模型输出 */}
+        <div className="divider" />
+        <IndicatorDictionary modules={["Equity_MacroOverlay", "Equity_Breadth", "Equity_PriceVolume", "Equity_Options", "Equity_FundFlow", "Equity_Sentiment"]} defaultExpanded />
       </div>
     </div>
   );

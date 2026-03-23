@@ -16,6 +16,7 @@ import { Tooltip } from "@/components/Tooltip";
 import apiClient from "@/lib/api";
 import { getRiskLightColor, getRiskLightLabel, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
+import { IndicatorDictionary } from "@/components/IndicatorDictionary";
 import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function LiquidityPage() {
@@ -512,8 +513,13 @@ export default function LiquidityPage() {
                 )}
               </div>
             </div>
+
           </>
         ) : null}
+
+        {/* 指标字典 — 始终显示，不依赖模型输出 */}
+        <div className="divider" />
+        <IndicatorDictionary modules={["Liquidity"]} defaultExpanded />
       </div>
     </div>
   );
