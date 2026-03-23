@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { RefreshCw, Calendar, Clock, AlertTriangle, TrendingUp, Shield, Activity } from "lucide-react";
 import { SignalOverlayChart } from "@/components/SignalOverlayChart";
 import apiClient from "@/lib/api";
@@ -55,14 +55,25 @@ export default function BacktestPage() {
     }
   }, [startDate, endDate, priceSymbol]);
 
-  // 切换资产后自动重跑（仅在已有结果时触发）
-  const prevSymbol = useRef(priceSymbol);
-  useEffect(() => {
-    if (prevSymbol.current !== priceSymbol && result) {
-      prevSymbol.current = priceSymbol;
-      handleRunBacktest();
-    }
-  }, [priceSymbol, result, handleRunBacktest]);
+  // 切换资产：更新 state + 如果已有结果则立即重跑
+  const handleSymbolChange = useCallback(
+    (symbol: string) => {
+      setPriceSymbol(symbol);
+      if (result) {
+        // 直接用新 symbol 发请求，不依赖 state 更新
+        setIsLoading(true);
+        setError(null);
+        apiClient
+          .runBacktest(startDate, endDate, symbol)
+          .then(setResult)
+          .catch((err) =>
+            setError(err instanceof Error ? err.message : "回测失败")
+          )
+          .finally(() => setIsLoading(false));
+      }
+    },
+    [startDate, endDate, result]
+  );
 
   // 预设时间范围快捷键
   const presets = [
@@ -131,7 +142,7 @@ export default function BacktestPage() {
               {PRICE_SYMBOLS.map((s) => (
                 <button
                   key={s.value}
-                  onClick={() => setPriceSymbol(s.value)}
+                  onClick={() => handleSymbolChange(s.value)}
                   className={cn(
                     "px-3 py-2 text-xs rounded-lg border transition-all",
                     priceSymbol === s.value
