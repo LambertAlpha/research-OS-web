@@ -350,13 +350,20 @@ export function SignalOverlayChart({
               />
 
               <XAxis
-                dataKey="dateLabel"
+                dataKey="date"
                 stroke="#52525b"
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
                 minTickGap={50}
+                tickFormatter={(d: string) =>
+                  new Date(d).toLocaleDateString("zh-CN", {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "Asia/Shanghai",
+                  })
+                }
               />
 
               <YAxis
@@ -375,14 +382,14 @@ export function SignalOverlayChart({
 
               {/* 风险灯号背景色带 */}
               {riskBands.map((band, i) => {
-                const startDate = chartData[band.startIdx]?.dateLabel;
-                const endDate = chartData[band.endIdx]?.dateLabel;
-                if (!startDate || !endDate) return null;
+                const bandStart = chartData[band.startIdx]?.date;
+                const bandEnd = chartData[band.endIdx]?.date;
+                if (!bandStart || !bandEnd) return null;
                 return (
                   <ReferenceArea
                     key={`band-${i}`}
-                    x1={startDate}
-                    x2={endDate}
+                    x1={bandStart}
+                    x2={bandEnd}
                     fill={RISK_LIGHT_COLORS[band.riskLight] ?? RISK_LIGHT_COLORS.unknown}
                     fillOpacity={1}
                     stroke="none"
@@ -397,7 +404,7 @@ export function SignalOverlayChart({
                 return (
                   <ReferenceLine
                     key={`state-${i}`}
-                    x={dataPoint.dateLabel}
+                    x={dataPoint.date}
                     stroke="#a78bfa"
                     strokeDasharray="4 4"
                     strokeOpacity={0.5}

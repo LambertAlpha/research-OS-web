@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { RefreshCw, Calendar, Clock, AlertTriangle, TrendingUp, Shield, Activity } from "lucide-react";
 import { SignalOverlayChart } from "@/components/SignalOverlayChart";
 import apiClient from "@/lib/api";
@@ -54,6 +54,15 @@ export default function BacktestPage() {
       setIsLoading(false);
     }
   }, [startDate, endDate, priceSymbol]);
+
+  // 切换资产后自动重跑（仅在已有结果时触发）
+  const prevSymbol = useRef(priceSymbol);
+  useEffect(() => {
+    if (prevSymbol.current !== priceSymbol && result) {
+      prevSymbol.current = priceSymbol;
+      handleRunBacktest();
+    }
+  }, [priceSymbol, result, handleRunBacktest]);
 
   // 预设时间范围快捷键
   const presets = [
