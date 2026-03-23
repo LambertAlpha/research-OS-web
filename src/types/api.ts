@@ -358,6 +358,59 @@ export interface IndicatorRecord {
 }
 
 // ============================================================================
+// 回测类型
+// ============================================================================
+
+// 单个信号快照
+export interface BacktestSignal {
+  date: string; // YYYY-MM-DD
+  risk_light: "green" | "yellow" | "red" | "unknown";
+  liquidity_score: number;
+  leverage_coef: number;
+  macro_state: string; // A / B / C / D
+  correction_level: string; // NONE / A / B / C
+  gates_closed: string[];
+  hard_stop_triggered: boolean;
+  forbidden_strategies: string[];
+  key_metrics: {
+    net_liquidity_delta?: number | null;
+    sofr_iorb?: number | null;
+    move?: number | null;
+    move_weekly_change?: number | null;
+    corr_20d?: number | null;
+    corr_60d?: number | null;
+    hy_oas?: number | null;
+    yield_curve_2s10s?: number | null;
+  };
+}
+
+// 信号变更事件
+export interface SignalChange {
+  date: string;
+  type:
+    | "risk_light"
+    | "macro_state"
+    | "gate_closed"
+    | "gate_opened"
+    | "hard_stop";
+  from?: string;
+  to?: string;
+  gate?: string;
+  description: string;
+}
+
+// 回测结果
+export interface BacktestResult {
+  start_date: string;
+  end_date: string;
+  total_signals: number;
+  price_series: RawDataPoint[];
+  signals: BacktestSignal[];
+  signal_changes: SignalChange[];
+  execution_time_ms: number;
+}
+
+// ============================================================================
 // Alert History 类型
 // ============================================================================
 

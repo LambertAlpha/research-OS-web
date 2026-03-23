@@ -21,6 +21,7 @@ import type {
   ModelVersionRecord,
   IndicatorRecord,
   AlertRecord,
+  BacktestResult,
 } from "@/types/api";
 
 /**
@@ -369,6 +370,24 @@ class ApiClient {
    */
   async getAlertHistory(): Promise<{ alerts: AlertRecord[]; total: number }> {
     return this.request("/api/alerts/history");
+  }
+
+  /**
+   * 运行回测 - 生成历史信号序列
+   */
+  async runBacktest(
+    startDate: string,
+    endDate: string,
+    priceSymbol: string = "SPX"
+  ): Promise<BacktestResult> {
+    return this.request("/api/backtest/signals", {
+      method: "POST",
+      body: JSON.stringify({
+        start_date: startDate,
+        end_date: endDate,
+        price_symbol: priceSymbol,
+      }),
+    });
   }
 }
 

@@ -22,6 +22,7 @@ import {
   Settings,
   Database,
   BookOpen,
+  FlaskConical,
 } from "lucide-react";
 
 const navItems = [
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/liquidity", label: "Liquidity", icon: Droplets },
   { href: "/macro", label: "Macro", icon: TrendingUp },
   { href: "/equity", label: "美股", icon: BarChart3 },
+  { href: "/backtest", label: "Backtest", icon: FlaskConical },
   { href: "/history", label: "History", icon: History },
   { href: "/registry", label: "Registry", icon: Database },
   { href: "/indicators", label: "Indicators", icon: BookOpen },
