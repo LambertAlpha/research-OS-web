@@ -27,10 +27,17 @@ function getDefaultDates() {
   };
 }
 
+const PRICE_SYMBOLS = [
+  { value: "SPX", label: "S&P 500" },
+  { value: "NDX", label: "NASDAQ 100" },
+  { value: "BTC-USD", label: "Bitcoin" },
+];
+
 export default function BacktestPage() {
   const defaults = getDefaultDates();
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
+  const [priceSymbol, setPriceSymbol] = useState("SPX");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,14 +46,14 @@ export default function BacktestPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiClient.runBacktest(startDate, endDate);
+      const data = await apiClient.runBacktest(startDate, endDate, priceSymbol);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "回测失败");
     } finally {
       setIsLoading(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, priceSymbol]);
 
   // 预设时间范围快捷键
   const presets = [
@@ -103,6 +110,29 @@ export default function BacktestPage() {
                 onChange={(e) => setEndDate(e.target.value)}
                 className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-cyan-500/50"
               />
+            </div>
+          </div>
+
+          {/* 资产选择 */}
+          <div>
+            <label className="block text-[10px] text-zinc-500 mb-1 uppercase tracking-wider">
+              标的资产
+            </label>
+            <div className="flex gap-1.5">
+              {PRICE_SYMBOLS.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setPriceSymbol(s.value)}
+                  className={cn(
+                    "px-3 py-2 text-xs rounded-lg border transition-all",
+                    priceSymbol === s.value
+                      ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
+                      : "bg-zinc-800/50 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -219,6 +249,7 @@ export default function BacktestPage() {
             priceSeries={result.price_series}
             signals={result.signals}
             signalChanges={result.signal_changes}
+            priceSymbol={priceSymbol}
           />
 
           {/* 信号明细表 */}

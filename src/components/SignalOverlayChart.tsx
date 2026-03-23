@@ -60,6 +60,7 @@ interface SignalOverlayChartProps {
   priceSeries: RawDataPoint[];
   signals: BacktestSignal[];
   signalChanges: SignalChange[];
+  priceSymbol?: string;
 }
 
 interface ChartDataPoint {
@@ -71,10 +72,17 @@ interface ChartDataPoint {
   macroState: string;
 }
 
+const SYMBOL_LABELS: Record<string, string> = {
+  SPX: "S&P 500",
+  NDX: "NASDAQ 100",
+  "BTC-USD": "Bitcoin",
+};
+
 export function SignalOverlayChart({
   priceSeries,
   signals,
   signalChanges,
+  priceSymbol = "SPX",
 }: SignalOverlayChartProps) {
   const [selectedRange, setSelectedRange] = useState<TimeRange>("ALL");
   const [visibleRange, setVisibleRange] = useState<{
@@ -256,7 +264,7 @@ export function SignalOverlayChart({
               <TrendingUp className="w-4 h-4 text-cyan-400" />
             </div>
             <h3 className="text-sm font-medium text-zinc-300">
-              SPX 信号叠加图
+              {SYMBOL_LABELS[priceSymbol] ?? priceSymbol} 信号叠加图
             </h3>
             <span className="text-[10px] text-zinc-500 px-2 py-0.5 rounded bg-zinc-800/50">
               {signals.length} 个信号点
