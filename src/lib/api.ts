@@ -15,6 +15,7 @@ import type {
   LiquidityOutput,
   MacroOutput,
   EquityOutput,
+  BtcOutput,
   HealthCheck,
   HistoryResponse,
   GateStatus,
@@ -196,6 +197,38 @@ class ApiClient {
             level: equity.risk_management?.label ?? equity.risk_management?.level ?? "NORMAL",
             action: equity.risk_management?.action ?? "正常",
           },
+          report_summary: d.report_summary || "",
+          alerts: d.alerts || [],
+          triggered_rules: d.triggered_rules || {},
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 获取 BTC 模型输出 (v8.0)
+   */
+  async getBtcOutput(): Promise<BtcOutput | null> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await this.request<any>("/api/btc");
+      if (res?.btc) {
+        const d = res;
+        const btc = d.btc;
+        return {
+          run_id: d.run_id || "",
+          run_ts: d.run_ts || "",
+          data_ts: (d.data_ts || "").replace(" ", "T"),
+          model_version: d.model_version || "",
+          signal: btc.signal || "NEUTRAL",
+          signal_confidence: btc.signal_confidence || "LOW",
+          action: btc.action || "",
+          indicator_states: btc.indicator_states || {},
+          triggered_patterns: btc.triggered_patterns || [],
+          validation: btc.validation || { bull_count: 0, bear_count: 0, resonance: null, cancellation: false },
           report_summary: d.report_summary || "",
           alerts: d.alerts || [],
           triggered_rules: d.triggered_rules || {},

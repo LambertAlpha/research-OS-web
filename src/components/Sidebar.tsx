@@ -23,13 +23,15 @@ import {
   Database,
   BookOpen,
   FlaskConical,
+  Bitcoin,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/liquidity", label: "Liquidity", icon: Droplets },
   { href: "/macro", label: "Macro", icon: TrendingUp },
-  { href: "/equity", label: "美股", icon: BarChart3 },
+  { href: "/equity", label: "US Stock", icon: BarChart3 },
+  { href: "/btc", label: "Bitcoin", icon: Bitcoin },
   { href: "/backtest", label: "Backtest", icon: FlaskConical },
   { href: "/history", label: "History", icon: History },
   { href: "/registry", label: "Registry", icon: Database },

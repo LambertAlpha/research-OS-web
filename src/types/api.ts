@@ -300,6 +300,48 @@ export interface EquityOutput {
 }
 
 // ============================================================================
+// BTC Model v8.0 Types
+// ============================================================================
+
+export interface BtcPattern {
+  pattern_id: string;
+  name: string;
+  signal: string;
+  direction: string; // "bull" | "bear" | "neutral"
+  matched_count: number;
+  required_count: number;
+  matched_indicators: string[];
+}
+
+export interface BtcValidation {
+  bull_count: number;
+  bear_count: number;
+  resonance: {
+    type: string;
+    name: string;
+    label: string;
+    matched_patterns: string[];
+  } | null;
+  cancellation: boolean;
+}
+
+export interface BtcOutput {
+  run_id: string;
+  run_ts: string;
+  data_ts: string;
+  model_version: string;
+  signal: string; // STRONG_LONG / LONG / NEUTRAL / SHORT / STRONG_SHORT
+  signal_confidence: string; // HIGH / MEDIUM / LOW
+  action: string;
+  indicator_states: Record<string, string>; // {indicator_id: "accumulation"|"neutral"|"distribution"}
+  triggered_patterns: BtcPattern[];
+  validation: BtcValidation;
+  report_summary?: string;
+  alerts?: Alert[];
+  triggered_rules?: Record<string, any>;
+}
+
+// ============================================================================
 // 历史记录类型
 // ============================================================================
 
