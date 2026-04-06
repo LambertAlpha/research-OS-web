@@ -34,6 +34,12 @@ const MODULE_COLORS: Record<string, string> = {
   Equity_Options: "text-pink-400 bg-pink-500/10 border-pink-500/30",
   Equity_FundFlow: "text-sky-400 bg-sky-500/10 border-sky-500/30",
   Equity_Sentiment: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+  // BTC 模型
+  BTC_Price: "text-orange-400 bg-orange-500/10 border-orange-500/30",
+  BTC_Flow: "text-orange-400 bg-orange-500/10 border-orange-500/30",
+  BTC_Valuation: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+  BTC_Supply: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
+  BTC_Derivatives: "text-pink-400 bg-pink-500/10 border-pink-500/30",
   // 共用
   Common: "text-zinc-400 bg-zinc-500/10 border-zinc-500/30",
 };
