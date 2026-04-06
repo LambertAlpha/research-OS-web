@@ -27,14 +27,20 @@ function describeCron(cron: string | null, tz: string | null): string {
   const [min = "0", hour = "0", dom = "*", , dow = "*"] = parts;
   const tzLabel = tz === "America/New_York" ? "ET" : tz === "Asia/Shanghai" ? "CST" : tz || "";
 
-  // 日频
-  if (dow === "1-5") return `Weekdays ${hour}:${min.padStart(2, "0")} ${tzLabel}`;
-  // 周频
-  if (dow === "5") return `Friday ${hour}:${min.padStart(2, "0")} ${tzLabel}`;
-  // 月频
-  if (dom !== "*") return `${dom}th of month ${hour}:${min.padStart(2, "0")} ${tzLabel}`;
+  const time = `${hour}:${min.padStart(2, "0")} ${tzLabel}`;
+  const dayNames: Record<string, string> = {
+    "0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday",
+    "4": "Thursday", "5": "Friday", "6": "Saturday", "7": "Sunday",
+  };
 
-  return `${hour}:${min.padStart(2, "0")} ${tzLabel}`;
+  // 日频 (Mon-Fri)
+  if (dow === "1-5") return `Weekdays ${time}`;
+  // 特定星期
+  if (dayNames[dow]) return `${dayNames[dow]} ${time}`;
+  // 月频
+  if (dom !== "*") return `${dom}th of month ${time}`;
+
+  return time;
 }
 
 function formatTimestamp(ts: string): string {
