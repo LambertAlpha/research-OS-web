@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
+import { IndicatorDictionary } from "@/components/IndicatorDictionary";
 import apiClient from "@/lib/api";
 
 import type { BtcOutput, HistoryRecord } from "@/types/api";
@@ -617,6 +618,10 @@ export default function BtcPage() {
             )}
           </>
         )}
+
+        {/* 指标字典 — 始终显示 */}
+        <div className="divider" />
+        <IndicatorDictionary modules={["BTC_Price", "BTC_Flow", "BTC_Valuation", "BTC_Supply", "BTC_Derivatives"]} defaultExpanded />
       </div>
     </div>
   );
