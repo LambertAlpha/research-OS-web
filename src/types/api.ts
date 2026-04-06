@@ -453,6 +453,44 @@ export interface BacktestResult {
 }
 
 // ============================================================================
+// Scheduler / Batch 类型
+// ============================================================================
+
+export interface BatchConfig {
+  description: string;
+  cron: string | null;
+  timezone: string | null;
+  trigger: string | null;
+  indicator_groups: string[];
+  on_complete: string | null;
+}
+
+export interface BatchLastRun {
+  started_at: string;
+  finished_at: string;
+  duration_ms: number;
+  success: boolean;
+  indicators_fetched: number;
+  model_triggered: boolean;
+  error: string | null;
+}
+
+export interface BatchStatus {
+  config: BatchConfig;
+  last_run: BatchLastRun | null;
+}
+
+export interface SchedulerBatchesResponse {
+  batches: Record<string, BatchStatus>;
+  freshness_summary: {
+    total: number;
+    fresh: number;
+    stale: number;
+    error: number;
+  };
+}
+
+// ============================================================================
 // Alert History 类型
 // ============================================================================
 

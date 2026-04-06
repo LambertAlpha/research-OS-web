@@ -23,6 +23,7 @@ import type {
   IndicatorRecord,
   AlertRecord,
   BacktestResult,
+  SchedulerBatchesResponse,
 } from "@/types/api";
 
 /**
@@ -403,6 +404,13 @@ class ApiClient {
    */
   async getAlertHistory(): Promise<{ alerts: AlertRecord[]; total: number }> {
     return this.request("/api/alerts/history");
+  }
+
+  /**
+   * 获取调度批次状态
+   */
+  async getSchedulerBatches(): Promise<SchedulerBatchesResponse> {
+    return this.request("/api/scheduler/batches");
   }
 
   /**

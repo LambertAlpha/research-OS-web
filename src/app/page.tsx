@@ -22,7 +22,8 @@ import {
   formatDate,
 } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle, Clock } from "lucide-react";
+import { ScheduleStatus } from "@/components/ScheduleStatus";
 
 export default function OverviewPage() {
   const [isRunning, setIsRunning] = useState(false);
@@ -441,6 +442,16 @@ export default function OverviewPage() {
             </div>
           </>
         )}
+
+        {/* 数据调度状态 */}
+        <div className="divider" />
+        <div className="mb-8">
+          <h2 className="section-title">
+            <Clock className="w-5 h-5 text-cyan-400" />
+            Data Schedule
+          </h2>
+          <ScheduleStatus />
+        </div>
       </div>
     </div>
   );
