@@ -86,11 +86,9 @@ export function CalendarHeatmap({ records, selectedDate, onDateSelect }: Calenda
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-      <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-
+    <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
       {/* 月份导航 */}
-      <div className="p-4 border-b border-zinc-800/50 flex items-center justify-between">
+      <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
         <button
           onClick={prevMonth}
           className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"

@@ -204,10 +204,9 @@ export default function MacroPage() {
         ) : !modelOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center border border-purple-500/20">
-                <Globe className="w-12 h-12 text-purple-400 animate-float" />
+              <div className="w-24 h-24 rounded-[14px] bg-[var(--bg-elevated)] flex items-center justify-center border border-[var(--border-subtle)]">
+                <Globe className="w-12 h-12 text-zinc-400 animate-float" />
               </div>
-              <div className="absolute inset-0 rounded-2xl bg-purple-500/10 blur-xl" />
             </div>
             <h2 className="text-xl font-semibold text-zinc-200 mb-2">
               暂无数据
@@ -222,7 +221,7 @@ export default function MacroPage() {
             {macroState && (
               <div className="mb-8">
                 <div
-                  className="relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl"
+                  className="relative rounded-[14px] p-6 overflow-hidden"
                   style={{
                     background: `linear-gradient(135deg, ${getStateColor(macroState.code)}15, transparent)`,
                     borderColor: `${getStateColor(macroState.code)}40`,
@@ -265,7 +264,7 @@ export default function MacroPage() {
             {correction && correction.level !== "NONE" && (
               <div className="mb-8">
                 <div
-                  className="relative rounded-xl p-4 overflow-hidden backdrop-blur-xl"
+                  className="relative rounded-[14px] p-4 overflow-hidden"
                   style={{
                     background: `${getCorrectionColor(correction.level)}15`,
                     borderColor: `${getCorrectionColor(correction.level)}40`,
@@ -298,12 +297,12 @@ export default function MacroPage() {
             {layer1 && (
               <div className="mb-8">
                 <h2 className="section-title">
-                  <Layers className="w-5 h-5 text-cyan-400" />
+                  <Layers className="w-5 h-5 text-zinc-400" />
                   Layer 1: 利率结构
                 </h2>
                 <div className="grid grid-cols-4 gap-4">
                   {/* 政策路径 */}
-                  <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
+                  <div className="group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       政策路径
                       <Tooltip indicatorKey="policy_path" placement="top" />
@@ -320,7 +319,7 @@ export default function MacroPage() {
                   </div>
 
                   {/* 曲线结构 */}
-                  <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
+                  <div className="group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       曲线形态
                       <Tooltip indicatorKey="curve_structure" placement="top" />
@@ -337,7 +336,7 @@ export default function MacroPage() {
                   </div>
 
                   {/* Real/BE */}
-                  <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
+                  <div className="group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       Real/BE
                       <Tooltip indicatorKey="real_be" placement="top" />
@@ -359,10 +358,10 @@ export default function MacroPage() {
                   {/* 期限溢价 */}
                   <div
                     className={cn(
-                      "group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border backdrop-blur-xl",
+                      "group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border hover:bg-[var(--bg-card-hover)]",
                       layer1.term_premium.warning
                         ? "border-amber-500/50"
-                        : "border-zinc-800/50"
+                        : "border-[var(--border-subtle)]"
                     )}
                   >
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -394,12 +393,12 @@ export default function MacroPage() {
             {layer2 && (
               <div className="mb-8">
                 <h2 className="section-title">
-                  <Activity className="w-5 h-5 text-cyan-400" />
+                  <Activity className="w-5 h-5 text-zinc-400" />
                   Layer 2: 叙事校验
                 </h2>
                 <div className="grid grid-cols-3 gap-4">
                   {/* 20D 相关性 */}
-                  <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
+                  <div className="group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       Corr(SPX, Δ10Y) 20D
                       <Tooltip indicatorKey="corr_20d" placement="top" />
@@ -426,7 +425,7 @@ export default function MacroPage() {
                   </div>
 
                   {/* 60D 相关性 */}
-                  <div className="group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
+                  <div className="group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                       Corr(SPX, Δ10Y) 60D
                       <Tooltip indicatorKey="corr_60d" placement="top" />
@@ -455,10 +454,10 @@ export default function MacroPage() {
                   {/* 叙事状态 */}
                   <div
                     className={cn(
-                      "group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border backdrop-blur-xl",
+                      "group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border hover:bg-[var(--bg-card-hover)]",
                       layer2.correlation.is_conflicting
                         ? "border-amber-500/50"
-                        : "border-zinc-800/50"
+                        : "border-[var(--border-subtle)]"
                     )}
                   >
                     <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -518,15 +517,14 @@ export default function MacroPage() {
             {exec && (
               <div className="mb-8">
                 <h2 className="section-title">
-                  <Target className="w-5 h-5 text-cyan-400" />
+                  <Target className="w-5 h-5 text-zinc-400" />
                   Layer 4: 执行矩阵
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
                   {/* 利率表达 */}
-                  <div className="group relative rounded-2xl p-5 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-cyan-500/30 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+                  <div className="group relative rounded-[14px] p-5 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <Target className="w-4 h-4 text-cyan-400" />
+                      <Target className="w-4 h-4 text-zinc-400" />
                       <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         利率表达
                         <Tooltip indicatorKey="rates_action" placement="top" />
@@ -556,10 +554,9 @@ export default function MacroPage() {
                   </div>
 
                   {/* 股票板块 */}
-                  <div className="group relative rounded-2xl p-5 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-purple-500/30 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
+                  <div className="group relative rounded-[14px] p-5 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="w-4 h-4 text-purple-400" />
+                      <TrendingUp className="w-4 h-4 text-zinc-400" />
                       <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         股票板块
                         <Tooltip indicatorKey="equity_sector" placement="top" />
@@ -574,10 +571,9 @@ export default function MacroPage() {
                   </div>
 
                   {/* 对冲要求 */}
-                  <div className="group relative rounded-2xl p-5 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-amber-500/30 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+                  <div className="group relative rounded-[14px] p-5 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <Shield className="w-4 h-4 text-amber-400" />
+                      <Shield className="w-4 h-4 text-zinc-400" />
                       <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         对冲要求
                         <Tooltip indicatorKey="hedge_required" placement="top" />
@@ -606,10 +602,9 @@ export default function MacroPage() {
                   </div>
 
                   {/* 卖波动许可 */}
-                  <div className="group relative rounded-2xl p-5 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-pink-500/30 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
+                  <div className="group relative rounded-[14px] p-5 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <LineChart className="w-4 h-4 text-pink-400" />
+                      <LineChart className="w-4 h-4 text-zinc-400" />
                       <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                         卖波动许可
                         <Tooltip indicatorKey="short_vol" placement="top" />
@@ -638,7 +633,7 @@ export default function MacroPage() {
             {/* 市场指标图表 */}
             <div className="mb-8">
               <h2 className="section-title">
-                <BarChart3 className="w-5 h-5 text-cyan-400" />
+                <BarChart3 className="w-5 h-5 text-zinc-400" />
                 市场指标
               </h2>
               <div className="grid grid-cols-2 gap-4">

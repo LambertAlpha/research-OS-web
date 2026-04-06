@@ -192,11 +192,10 @@ export default function LiquidityPage() {
           </div>
         ) : !modelOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-600/20 flex items-center justify-center border border-blue-500/20">
+            <div className="mb-6">
+              <div className="w-24 h-24 rounded-[14px] bg-[var(--bg-card)] flex items-center justify-center border border-[var(--border-subtle)]">
                 <Droplets className="w-12 h-12 text-blue-400 animate-float" />
               </div>
-              <div className="absolute inset-0 rounded-2xl bg-blue-500/10 blur-xl" />
             </div>
             <h2 className="text-xl font-semibold text-zinc-200 mb-2">
               暂无数据
@@ -210,8 +209,7 @@ export default function LiquidityPage() {
             {/* 一票否决警告 */}
             {liquidity.hard_stop_triggered && (
               <div className="mb-6">
-                <div className="relative rounded-xl p-4 overflow-hidden bg-red-500/20 border border-red-500/50 backdrop-blur-xl">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
+                <div className="relative rounded-xl p-4 overflow-hidden bg-red-500/10 border border-red-500/30">
                   <div className="text-red-400 font-bold flex items-center gap-2 text-lg">
                     <AlertCircle className="w-5 h-5" />
                     一票否决触发
@@ -226,13 +224,7 @@ export default function LiquidityPage() {
             {/* 核心指标卡片 */}
             <div className="grid grid-cols-3 gap-6 mb-8">
               {/* 风险灯号 */}
-              <div className="group relative rounded-2xl p-6 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-cyan-500/30 backdrop-blur-xl text-center">
-                <div
-                  className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, ${riskLightColor}, transparent)`,
-                  }}
-                />
+              <div className="group relative rounded-[14px] p-6 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] text-center">
                 <div className="text-6xl mb-4">{riskLightEmoji}</div>
                 <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-center gap-1.5">
                   风险灯号
@@ -240,23 +232,17 @@ export default function LiquidityPage() {
                 </div>
                 <div
                   className="text-xl font-semibold mt-2"
-                  style={{ color: riskLightColor, textShadow: `0 0 20px ${riskLightColor}40` }}
+                  style={{ color: riskLightColor }}
                 >
                   {riskLightLabel}
                 </div>
               </div>
 
               {/* 流动性评分 */}
-              <div className="group relative rounded-2xl p-6 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-cyan-500/30 backdrop-blur-xl text-center">
-                <div
-                  className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, ${scoreColor}, transparent)`,
-                  }}
-                />
+              <div className="group relative rounded-[14px] p-6 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] text-center">
                 <div
                   className="text-4xl font-bold"
-                  style={{ color: scoreColor, textShadow: `0 0 30px ${scoreColor}60` }}
+                  style={{ color: scoreColor }}
                 >
                   {formatNumber(liquidity.liquidity_score)}
                   <span className="text-lg text-zinc-500">/100</span>
@@ -272,7 +258,6 @@ export default function LiquidityPage() {
                     style={{
                       width: `${liquidity.liquidity_score}%`,
                       backgroundColor: scoreColor,
-                      boxShadow: `0 0 10px ${scoreColor}`,
                     }}
                   />
                 </div>
@@ -285,11 +270,9 @@ export default function LiquidityPage() {
               </div>
 
               {/* 建议杠杆 */}
-              <div className="group relative rounded-2xl p-6 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-cyan-500/30 backdrop-blur-xl text-center">
-                <div className="absolute top-0 left-0 right-0 h-0.5 opacity-60 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+              <div className="group relative rounded-[14px] p-6 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] text-center">
                 <div
-                  className="text-4xl font-bold text-cyan-400"
-                  style={{ textShadow: "0 0 30px rgba(6, 182, 212, 0.6)" }}
+                  className="text-4xl font-bold text-zinc-200"
                 >
                   {formatNumber(liquidity.leverage_coef, 1)}
                   <span className="text-xl text-zinc-500">x</span>
@@ -334,7 +317,7 @@ export default function LiquidityPage() {
               return (
                 <div className="mb-8">
                   <h2 className="section-title">
-                    <BarChart3 className="w-5 h-5 text-cyan-400" />
+                    <BarChart3 className="w-5 h-5 text-zinc-400" />
                     分项得分
                   </h2>
                   <div className="grid grid-cols-3 gap-5">
@@ -348,13 +331,8 @@ export default function LiquidityPage() {
                       return (
                         <div
                           key={dim}
-                          className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl"
+                          className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
                         >
-                          {/* 顶部渐变线 */}
-                          <div
-                            className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
-                            style={{ background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)` }}
-                          />
 
                           {/* 维度标题 + 汇总分 */}
                           <div className="flex items-center justify-between mb-4">
@@ -367,7 +345,7 @@ export default function LiquidityPage() {
                             <div className="text-right">
                               <div
                                 className="text-2xl font-bold"
-                                style={{ color: cfg.color, textShadow: `0 0 16px ${cfg.color}40` }}
+                                style={{ color: cfg.color }}
                               >
                                 {formatNumber(dimScore)}
                                 <span className="text-sm text-zinc-500">/100</span>
@@ -379,7 +357,7 @@ export default function LiquidityPage() {
                           <div className="mb-4 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-700"
-                              style={{ width: `${dimScore}%`, backgroundColor: cfg.color, boxShadow: `0 0 8px ${cfg.color}` }}
+                              style={{ width: `${dimScore}%`, backgroundColor: cfg.color }}
                             />
                           </div>
 
@@ -434,8 +412,7 @@ export default function LiquidityPage() {
             {/* 禁止策略 */}
             {liquidity.forbidden_strategies.length > 0 && (
               <div className="mb-8">
-                <div className="relative rounded-xl p-4 overflow-hidden bg-red-500/10 border border-red-500/30 backdrop-blur-xl">
-                  <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+                <div className="rounded-xl p-4 overflow-hidden bg-red-500/10 border border-red-500/30">
                   <div className="text-red-400 font-semibold flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
                     禁止策略
@@ -450,7 +427,7 @@ export default function LiquidityPage() {
             {/* 流动性指标图表 */}
             <div className="mb-8">
               <h2 className="section-title">
-                <BarChart3 className="w-5 h-5 text-cyan-400" />
+                <BarChart3 className="w-5 h-5 text-zinc-400" />
                 流动性指标
               </h2>
               <div className="grid grid-cols-2 gap-4">

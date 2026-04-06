@@ -20,7 +20,7 @@ import { BookOpen, RefreshCw, Search, ChevronDown, ChevronRight } from "lucide-r
 /** 模块对应的颜色 */
 const MODULE_COLORS: Record<string, string> = {
   // 流动性模型
-  Liquidity: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30",
+  Liquidity: "text-zinc-400 bg-zinc-500/10 border-zinc-500/30",
   // 宏观模型
   Layer1: "text-amber-400 bg-amber-500/10 border-amber-500/30",
   Layer2: "text-violet-400 bg-violet-500/10 border-violet-500/30",
@@ -107,8 +107,8 @@ export default function IndicatorsPage() {
         {/* 页面标题 */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-cyan-500/10">
-              <BookOpen className="w-5 h-5 text-cyan-400" />
+            <div className="p-2 rounded-lg bg-zinc-500/10">
+              <BookOpen className="w-5 h-5 text-zinc-400" />
             </div>
             <h1 className="text-2xl font-bold text-zinc-100">Indicator Dictionary</h1>
           </div>
@@ -128,8 +128,8 @@ export default function IndicatorsPage() {
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200",
                   activeModule === module
-                    ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                    : "bg-zinc-900/50 text-zinc-400 border-zinc-800/50 hover:bg-zinc-800/50 hover:text-zinc-300"
+                    ? "bg-zinc-700/40 text-zinc-200 border-zinc-500"
+                    : "bg-zinc-900/50 text-zinc-400 border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] hover:text-zinc-300"
                 )}
               >
                 {module}
@@ -145,27 +145,26 @@ export default function IndicatorsPage() {
               placeholder="搜索 Symbol 或名称..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+              className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-[var(--border-subtle)] rounded-lg text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
             />
           </div>
         </div>
 
         {/* 内容区域 */}
         {isLoading ? (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-16 text-center text-zinc-500">
+          <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] p-16 text-center text-zinc-500">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
             加载中...
           </div>
         ) : error ? (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-red-500/30 backdrop-blur-xl p-16 text-center text-red-400">
+          <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-red-500/30 p-16 text-center text-red-400">
             {error}
           </div>
         ) : (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+          <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-zinc-800/50">
+                <tr className="border-b border-[var(--border-subtle)]">
                   <th className="w-8 py-4 px-3" />
                   <th className="text-left py-4 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Symbol
@@ -221,7 +220,7 @@ export default function IndicatorsPage() {
                             )}
                           </td>
                           <td className="py-4 px-5 text-sm font-mono font-medium">
-                            <span className={isPending ? "text-zinc-500" : "text-cyan-400"}>{ind.symbol}</span>
+                            <span className={isPending ? "text-zinc-500" : "text-zinc-300"}>{ind.symbol}</span>
                             {isPending && (
                               <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700">
                                 待接入
@@ -314,7 +313,7 @@ export default function IndicatorsPage() {
                               </div>
                               {/* 数据源代码 */}
                               {ind.source_symbol && (
-                                <div className="mt-4 pt-4 border-t border-zinc-800/50">
+                                <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
                                   <span className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">
                                     数据源代码:
                                   </span>{" "}
@@ -334,7 +333,7 @@ export default function IndicatorsPage() {
             </table>
 
             {/* 底部统计 */}
-            <div className="px-5 py-3 border-t border-zinc-800/50 text-xs text-zinc-500">
+            <div className="px-5 py-3 border-t border-[var(--border-subtle)] text-xs text-zinc-500">
               显示 {filteredIndicators.length} / {indicators.length} 个指标
               {activeModule !== "All" && ` (筛选: ${activeModule})`}
             </div>

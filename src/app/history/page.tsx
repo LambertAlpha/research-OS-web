@@ -155,7 +155,7 @@ export default function HistoryPage() {
           {/* 左侧：日历热力图 */}
           <div className="col-span-12 lg:col-span-5">
             {isLoadingHistory ? (
-              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-8 text-center text-zinc-500">
+              <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] p-8 text-center text-zinc-500">
                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                 加载中...
               </div>
@@ -178,10 +178,9 @@ export default function HistoryPage() {
             ) : !modelOutput ? (
               <div className="flex flex-col items-center justify-center py-24">
                 <div className="relative mb-6">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/20 flex items-center justify-center border border-amber-500/20">
-                    <History className="w-12 h-12 text-amber-400 animate-float" />
+                  <div className="w-24 h-24 rounded-[14px] bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                    <History className="w-12 h-12 text-amber-400" />
                   </div>
-                  <div className="absolute inset-0 rounded-2xl bg-amber-500/10 blur-xl" />
                 </div>
                 <h2 className="text-xl font-semibold text-zinc-200 mb-2">
                   {historyRecords.length > 0 ? "选择日期查看详情" : "暂无数据"}
@@ -197,16 +196,15 @@ export default function HistoryPage() {
                 {/* 触发规则 */}
                 <div className="mb-8">
                   <h2 className="section-title">
-                    <Search className="w-5 h-5 text-cyan-400" />
+                    <Search className="w-5 h-5 text-zinc-400" />
                     {selectedRecord ? "触发的规则" : "本次触发的规则"}
                   </h2>
 
                   {Object.keys(modelOutput.triggered_rules).length > 0 ? (
-                    <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                      <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+                    <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-zinc-800/50">
+                          <tr className="border-b border-[var(--border-subtle)]">
                             <th className="text-left py-4 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                               规则名称
                             </th>
@@ -244,8 +242,7 @@ export default function HistoryPage() {
                       </table>
                     </div>
                   ) : (
-                    <div className="relative rounded-2xl p-8 text-center bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl text-zinc-500">
-                      <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-zinc-600 to-transparent" />
+                    <div className="relative rounded-[14px] p-8 text-center bg-[var(--bg-card)] border border-[var(--border-subtle)] text-zinc-500">
                       暂无触发的规则
                     </div>
                   )}
@@ -266,20 +263,12 @@ export default function HistoryPage() {
                         <div
                           key={i}
                           className={cn(
-                            "relative rounded-xl p-4 overflow-hidden backdrop-blur-xl",
+                            "relative rounded-[14px] p-4 overflow-hidden",
                             alert.level === "CRITICAL"
                               ? "bg-red-500/10 border border-red-500/30"
                               : "bg-amber-500/10 border border-amber-500/30"
                           )}
                         >
-                          <div
-                            className={cn(
-                              "absolute top-0 left-0 right-0 h-0.5 opacity-50",
-                              alert.level === "CRITICAL"
-                                ? "bg-gradient-to-r from-transparent via-red-500 to-transparent"
-                                : "bg-gradient-to-r from-transparent via-amber-500 to-transparent"
-                            )}
-                          />
                           <div
                             className={cn(
                               "font-semibold text-sm flex items-center gap-2",
@@ -305,8 +294,7 @@ export default function HistoryPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="relative rounded-2xl p-8 text-center bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-emerald-500/20 backdrop-blur-xl text-emerald-400">
-                      <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+                    <div className="relative rounded-[14px] p-8 text-center bg-[var(--bg-card)] border border-emerald-500/20 text-emerald-400">
                       暂无告警
                     </div>
                   )}
@@ -317,11 +305,10 @@ export default function HistoryPage() {
                 {/* 运行信息 */}
                 <div className="mb-8">
                   <h2 className="section-title">
-                    <BarChart3 className="w-5 h-5 text-cyan-400" />
+                    <BarChart3 className="w-5 h-5 text-zinc-400" />
                     运行信息
                   </h2>
-                  <div className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+                  <div className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                     <div className="grid grid-cols-5 gap-6">
                       <div>
                         <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">
@@ -352,8 +339,7 @@ export default function HistoryPage() {
                           执行时间
                         </div>
                         <div
-                          className="text-sm text-cyan-400 mt-2 font-medium"
-                          style={{ textShadow: "0 0 10px rgba(6, 182, 212, 0.5)" }}
+                          className="text-sm text-zinc-400 mt-2 font-medium"
                         >
                           {modelOutput.execution_time_ms}ms
                         </div>
@@ -391,18 +377,16 @@ export default function HistoryPage() {
           </h2>
 
           {isLoadingAlerts ? (
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-8 text-center text-zinc-500">
+            <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] p-8 text-center text-zinc-500">
               <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
               加载告警历史...
             </div>
           ) : alertHistory.length === 0 ? (
-            <div className="relative rounded-2xl p-8 text-center bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-emerald-500/20 backdrop-blur-xl text-emerald-400">
-              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+            <div className="relative rounded-[14px] p-8 text-center bg-[var(--bg-card)] border border-emerald-500/20 text-emerald-400">
               暂无告警记录
             </div>
           ) : (
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+            <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
               <div className="divide-y divide-zinc-800/30">
                 {alertHistory.map((alert) => (
                   <div
@@ -413,7 +397,7 @@ export default function HistoryPage() {
                         ? "bg-red-500/5 hover:bg-red-500/10"
                         : alert.alert_level === "WARNING"
                           ? "bg-amber-500/5 hover:bg-amber-500/10"
-                          : "bg-cyan-500/5 hover:bg-cyan-500/10"
+                          : "hover:bg-[var(--bg-card-hover)]"
                     )}
                   >
                     {/* 时间线指示器 */}
@@ -422,13 +406,13 @@ export default function HistoryPage() {
                         className={cn(
                           "w-3 h-3 rounded-full shrink-0",
                           alert.alert_level === "CRITICAL"
-                            ? "bg-red-500 shadow-lg shadow-red-500/50"
+                            ? "bg-red-500"
                             : alert.alert_level === "WARNING"
-                              ? "bg-amber-500 shadow-lg shadow-amber-500/50"
-                              : "bg-cyan-500 shadow-lg shadow-cyan-500/50"
+                              ? "bg-amber-500"
+                              : "bg-zinc-400"
                         )}
                       />
-                      <div className="w-px h-full bg-zinc-800/50 mt-1" />
+                      <div className="w-px h-full bg-[var(--border-subtle)] mt-1" />
                     </div>
 
                     {/* 告警内容 */}
@@ -441,7 +425,7 @@ export default function HistoryPage() {
                               ? "bg-red-500/20 text-red-400 border-red-500/30"
                               : alert.alert_level === "WARNING"
                                 ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                                : "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                                : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"
                           )}
                         >
                           {alert.alert_level}

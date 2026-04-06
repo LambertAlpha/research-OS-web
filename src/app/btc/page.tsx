@@ -12,7 +12,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import apiClient from "@/lib/api";
-import { cn } from "@/lib/utils";
+
 import type { BtcOutput, HistoryRecord } from "@/types/api";
 import {
   Bitcoin,
@@ -34,12 +34,12 @@ import {
 // 常量映射
 // ============================================================================
 
-const SIGNAL_CONFIG: Record<string, { color: string; bg: string; label: string; emoji: string }> = {
-  STRONG_LONG: { color: "#10b981", bg: "from-emerald-500/15 to-emerald-500/5", label: "强烈做多", emoji: "🟢🟢" },
-  LONG: { color: "#06b6d4", bg: "from-cyan-500/15 to-cyan-500/5", label: "做多", emoji: "🟢" },
-  NEUTRAL: { color: "#6b7280", bg: "from-zinc-500/15 to-zinc-500/5", label: "观望", emoji: "⚪" },
-  SHORT: { color: "#f59e0b", bg: "from-amber-500/15 to-amber-500/5", label: "做空/减仓", emoji: "🔴" },
-  STRONG_SHORT: { color: "#ef4444", bg: "from-red-500/15 to-red-500/5", label: "强烈做空", emoji: "🔴🔴" },
+const SIGNAL_CONFIG: Record<string, { color: string; label: string; emoji: string }> = {
+  STRONG_LONG: { color: "#10b981", label: "强烈做多", emoji: "🟢🟢" },
+  LONG: { color: "#10b981", label: "做多", emoji: "🟢" },
+  NEUTRAL: { color: "#6b7280", label: "观望", emoji: "⚪" },
+  SHORT: { color: "#f59e0b", label: "做空/减仓", emoji: "🔴" },
+  STRONG_SHORT: { color: "#ef4444", label: "强烈做空", emoji: "🔴🔴" },
 };
 
 const CONFIDENCE_COLOR: Record<string, string> = {
@@ -57,22 +57,22 @@ const STATE_CONFIG: Record<string, { color: string; label: string; icon: typeof 
 const INDICATOR_GROUPS: Record<string, { title: string; color: string; ids: string[] }> = {
   A: {
     title: "资金流与分布",
-    color: "#06b6d4",
+    color: "#a1a1aa",
     ids: ["A1_ETF_FLOW", "A2_COINBASE_BAL", "A3_EXCHANGE_NETFLOW", "A4_WHALE_EXCHANGE", "A5_REALIZED_CAP_CHANGE", "A6_TREND_ACCUM_SCORE"],
   },
   B: {
     title: "估值与风险",
-    color: "#a855f7",
+    color: "#a1a1aa",
     ids: ["B1_REALIZED_PROFIT", "B2_STH_COST_MVRV", "B3_LTH_MVRV_SLOPE", "B4_SUPPLY_IN_PROFIT", "B5_SELL_SIDE_RISK"],
   },
   C: {
     title: "供给结构",
-    color: "#f59e0b",
+    color: "#a1a1aa",
     ids: ["C1_URPD_ENTITY", "C2_LTH_STH_RATIO", "C3_LTH_NET_POSITION", "C4_SUPPLY_BEHAVIOR"],
   },
   D: {
     title: "衍生品",
-    color: "#ec4899",
+    color: "#a1a1aa",
     ids: ["D1_OI_LIQUIDATION", "D2_FUNDING_RATE", "D3_FUTURES_SPOT_CVD", "D4_PERP_SPOT_GAP", "D5_OPTIONS_PC_SKEW"],
   },
 };
@@ -261,10 +261,9 @@ export default function BtcPage() {
         ) : !btcOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-600/20 flex items-center justify-center border border-orange-500/20">
+              <div className="w-24 h-24 rounded-[14px] bg-[var(--bg-card)] flex items-center justify-center border border-[var(--border-subtle)]">
                 <Bitcoin className="w-12 h-12 text-orange-400 animate-float" />
               </div>
-              <div className="absolute inset-0 rounded-2xl bg-orange-500/10 blur-xl" />
             </div>
             <h2 className="text-xl font-semibold text-zinc-200 mb-2">暂无数据</h2>
             <p className="text-zinc-500 text-sm mb-1">点击「运行模型」按钮开始分析</p>
@@ -292,16 +291,8 @@ export default function BtcPage() {
             <div className="grid grid-cols-3 gap-4 mb-8">
               {/* 最终信号卡 */}
               <div
-                className={cn(
-                  "relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl border bg-gradient-to-br",
-                  signalCfg.bg
-                )}
-                style={{ borderColor: `${signalCfg.color}40` }}
+                className="relative rounded-[14px] p-6 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
               >
-                <div
-                  className="absolute top-0 left-0 right-0 h-1"
-                  style={{ backgroundColor: signalCfg.color }}
-                />
                 <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5" />
                   最终信号
@@ -321,8 +312,7 @@ export default function BtcPage() {
               </div>
 
               {/* 信心度 + 统计卡 */}
-              <div className="relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50">
-                <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
+              <div className="relative rounded-[14px] p-6 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                 <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5" />
                   信心度 & 覆盖
@@ -353,8 +343,7 @@ export default function BtcPage() {
               </div>
 
               {/* 验证状态卡 */}
-              <div className="relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50">
-                <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
+              <div className="relative rounded-[14px] p-6 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                 <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   {validation?.cancellation ? (
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
@@ -419,7 +408,7 @@ export default function BtcPage() {
               </h2>
 
               {patterns.length === 0 ? (
-                <div className="rounded-2xl p-8 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 text-center">
+                <div className="rounded-[14px] p-8 bg-[var(--bg-card)] border border-[var(--border-subtle)] text-center">
                   <Eye className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
                   <div className="text-zinc-400 font-medium">无模式触发</div>
                   <div className="text-sm text-zinc-600 mt-1">
@@ -436,13 +425,8 @@ export default function BtcPage() {
                     return (
                       <div
                         key={p.pattern_id}
-                        className="relative rounded-xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border backdrop-blur-xl"
-                        style={{ borderColor: `${color}30` }}
+                        className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
                       >
-                        <div
-                          className="absolute top-0 left-0 right-0 h-0.5"
-                          style={{ backgroundColor: color }}
-                        />
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-xl">{patInfo.emoji}</span>
@@ -501,14 +485,8 @@ export default function BtcPage() {
                 {Object.entries(INDICATOR_GROUPS).map(([groupKey, group]) => (
                   <div
                     key={groupKey}
-                    className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl"
+                    className="relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
                   >
-                    <div
-                      className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
-                      style={{
-                        background: `linear-gradient(90deg, transparent, ${group.color}, transparent)`,
-                      }}
-                    />
                     <div className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: group.color }}>
                       <span className="font-bold text-sm">{groupKey}</span>
                       <span className="text-zinc-500">{group.title}</span>
@@ -579,18 +557,8 @@ export default function BtcPage() {
                     操作建议
                   </h2>
                   <div
-                    className="relative rounded-2xl p-5 overflow-hidden backdrop-blur-xl border bg-gradient-to-br"
-                    style={{
-                      borderColor: `${signalCfg.color}30`,
-                      background: `linear-gradient(135deg, ${signalCfg.color}08, transparent)`,
-                    }}
+                    className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
                   >
-                    <div
-                      className="absolute top-0 left-0 right-0 h-0.5 opacity-50"
-                      style={{
-                        background: `linear-gradient(90deg, transparent, ${signalCfg.color}, transparent)`,
-                      }}
-                    />
                     <div className="text-sm text-zinc-300 leading-relaxed">
                       {btcOutput.action}
                     </div>
@@ -610,8 +578,7 @@ export default function BtcPage() {
                     <FileText className="w-5 h-5 text-orange-400" />
                     分析报告
                   </h2>
-                  <div className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
+                  <div className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                     <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
                       {btcOutput.report_summary}
                     </pre>

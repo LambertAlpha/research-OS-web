@@ -23,7 +23,7 @@ import {
 
 /** 模块对应的颜色 */
 const MODULE_COLORS: Record<string, string> = {
-  Liquidity: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30",
+  Liquidity: "text-zinc-400 bg-zinc-500/10 border-zinc-500/30",
   Layer1: "text-amber-400 bg-amber-500/10 border-amber-500/30",
   Layer2: "text-violet-400 bg-violet-500/10 border-violet-500/30",
   Layer3: "text-red-400 bg-red-500/10 border-red-500/30",
@@ -132,7 +132,7 @@ export function IndicatorDictionary({
         className="w-full flex items-center justify-between group cursor-pointer mb-4"
       >
         <h2 className="section-title !mb-0">
-          <BookOpen className="w-5 h-5 text-cyan-400" />
+          <BookOpen className="w-5 h-5 text-zinc-400" />
           指标字典
           <span className="text-zinc-500 text-sm font-normal ml-2">
             {indicators.length > 0
@@ -152,12 +152,12 @@ export function IndicatorDictionary({
       {isOpen && (
         <div>
           {showLoading ? (
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-12 text-center text-zinc-500">
+            <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] p-12 text-center text-zinc-500">
               <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
               加载中...
             </div>
           ) : error ? (
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-red-500/30 backdrop-blur-xl p-12 text-center text-red-400">
+            <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-red-500/30 p-12 text-center text-red-400">
               {error}
             </div>
           ) : (
@@ -174,8 +174,8 @@ export function IndicatorDictionary({
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200",
                           activeModule === module
-                            ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                            : "bg-zinc-900/50 text-zinc-400 border-zinc-800/50 hover:bg-zinc-800/50 hover:text-zinc-300"
+                            ? "bg-zinc-700/40 text-zinc-200 border-zinc-500"
+                            : "bg-zinc-900/50 text-zinc-400 border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)] hover:text-zinc-300"
                         )}
                       >
                         {module}
@@ -192,17 +192,16 @@ export function IndicatorDictionary({
                     placeholder="搜索 Symbol 或名称..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-[var(--border-subtle)] rounded-lg text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
                   />
                 </div>
               </div>
 
               {/* 表格 */}
-              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+              <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-zinc-800/50">
+                    <tr className="border-b border-[var(--border-subtle)]">
                       <th className="w-8 py-3 px-3" />
                       <th className="text-left py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                         Symbol
@@ -269,7 +268,7 @@ export function IndicatorDictionary({
                               <td className="py-3 px-4 text-sm font-mono font-medium">
                                 <span
                                   className={
-                                    isPending ? "text-zinc-500" : "text-cyan-400"
+                                    isPending ? "text-zinc-500" : "text-zinc-300"
                                   }
                                 >
                                   {ind.symbol}
@@ -374,7 +373,7 @@ export function IndicatorDictionary({
                                     </div>
                                   </div>
                                   {ind.source_symbol && (
-                                    <div className="mt-3 pt-3 border-t border-zinc-800/50">
+                                    <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
                                       <span className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">
                                         数据源代码:
                                       </span>{" "}
@@ -394,7 +393,7 @@ export function IndicatorDictionary({
                 </table>
 
                 {/* 底部统计 */}
-                <div className="px-4 py-2.5 border-t border-zinc-800/50 text-xs text-zinc-500">
+                <div className="px-4 py-2.5 border-t border-[var(--border-subtle)] text-xs text-zinc-500">
                   显示 {filteredIndicators.length} / {indicators.length} 个指标
                   {activeModule !== "All" && ` (筛选: ${activeModule})`}
                 </div>

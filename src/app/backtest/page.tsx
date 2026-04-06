@@ -102,8 +102,7 @@ export default function BacktestPage() {
       </div>
 
       {/* 参数面板 */}
-      <div className="relative rounded-2xl p-5 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-        <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-violet-400 to-transparent" />
+      <div className="relative rounded-[14px] p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)]">
 
         <div className="flex flex-wrap items-end gap-4">
           {/* 日期范围 */}
@@ -116,7 +115,7 @@ export default function BacktestPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-cyan-500/50"
+                className="bg-zinc-800/50 border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-600"
               />
             </div>
             <span className="text-zinc-600 pb-2">→</span>
@@ -128,7 +127,7 @@ export default function BacktestPage() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-cyan-500/50"
+                className="bg-zinc-800/50 border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-zinc-600"
               />
             </div>
           </div>
@@ -146,8 +145,8 @@ export default function BacktestPage() {
                   className={cn(
                     "px-3 py-2 text-xs rounded-lg border transition-all",
                     priceSymbol === s.value
-                      ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
-                      : "bg-zinc-800/50 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
+                      ? "bg-zinc-700/40 border-zinc-500 text-zinc-200"
+                      : "bg-zinc-800/50 border-[var(--border-subtle)] text-zinc-400 hover:text-zinc-200 hover:bg-[var(--bg-card-hover)]"
                   )}
                 >
                   {s.label}
@@ -162,7 +161,7 @@ export default function BacktestPage() {
               <button
                 key={p.months}
                 onClick={() => applyPreset(p.months)}
-                className="px-3 py-2 text-xs rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-all"
+                className="px-3 py-2 text-xs rounded-lg bg-zinc-800/50 border border-[var(--border-subtle)] text-zinc-400 hover:text-zinc-200 hover:bg-[var(--bg-card-hover)] transition-all"
               >
                 {p.label}
               </button>
@@ -177,7 +176,7 @@ export default function BacktestPage() {
               "px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
               isLoading
                 ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 shadow-lg shadow-cyan-500/20"
+                : "bg-zinc-200 text-zinc-900 hover:bg-zinc-300"
             )}
           >
             <RefreshCw
@@ -276,11 +275,9 @@ export default function BacktestPage() {
           <SignalDetailTable signals={result.signals} />
 
           {/* 信号变更时间线 */}
-          <div className="relative rounded-2xl p-5 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
-
+          <div className="relative rounded-[14px] p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)]">
             <h3 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-amber-400" />
+              <Activity className="w-4 h-4 text-zinc-400" />
               信号变更时间线
             </h3>
 
@@ -314,13 +311,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="relative rounded-xl p-4 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl overflow-hidden">
-      <div
-        className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-        }}
-      />
+    <div className="relative rounded-[14px] p-4 bg-[var(--bg-card)] border border-[var(--border-subtle)] overflow-hidden">
       <div className="flex items-center gap-2 mb-2">
         <span style={{ color }} className="opacity-70">
           {icon}
@@ -342,8 +333,8 @@ function SignalChangeRow({ change }: { change: SignalChange }) {
   > = {
     risk_light: {
       icon: <Shield className="w-3 h-3" />,
-      color: "text-cyan-400",
-      bg: "bg-cyan-500/10",
+      color: "text-zinc-400",
+      bg: "bg-zinc-500/10",
     },
     macro_state: {
       icon: <TrendingUp className="w-3 h-3" />,
@@ -370,7 +361,7 @@ function SignalChangeRow({ change }: { change: SignalChange }) {
   const config = typeConfig[change.type] ?? typeConfig.risk_light!;
 
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-b-0">
+    <div className="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] last:border-b-0">
       <span className="text-[11px] text-zinc-600 font-mono w-24 shrink-0">
         {change.date}
       </span>
@@ -408,19 +399,17 @@ function SignalDetailTable({ signals }: { signals: BacktestSignal[] }) {
   const displayed = expanded ? reversed : reversed.slice(0, 10);
 
   return (
-    <div className="relative rounded-2xl p-5 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-      <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
-
+    <div className="relative rounded-[14px] p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-cyan-400" />
+          <Activity className="w-4 h-4 text-zinc-400" />
           信号明细表
           <span className="text-[10px] text-zinc-600">（每周五）</span>
         </h3>
         {signals.length > 10 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
+            className="text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors"
           >
             {expanded ? "收起" : `展开全部 (${signals.length})`}
           </button>
@@ -541,7 +530,7 @@ function SignalDetailTable({ signals }: { signals: BacktestSignal[] }) {
                             ? "bg-red-500/20 text-red-400"
                             : s.correction_level === "B"
                               ? "bg-amber-500/20 text-amber-400"
-                              : "bg-cyan-500/20 text-cyan-400"
+                              : "bg-zinc-500/20 text-zinc-400"
                         )}
                       >
                         {s.correction_level}档

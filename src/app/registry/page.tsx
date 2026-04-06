@@ -18,7 +18,7 @@ import { Database, RefreshCw } from "lucide-react";
 
 /** 模型类型对应的颜色主题 */
 const MODEL_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Liquidity: { bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-500/30" },
+  Liquidity: { bg: "bg-zinc-500/10", text: "text-zinc-400", border: "border-zinc-500/30" },
   Macro: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/30" },
   Equity: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/30" },
   Combined: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/30" },
@@ -81,20 +81,19 @@ export default function RegistryPage() {
 
         {/* 内容区域 */}
         {isLoading ? (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl p-16 text-center text-zinc-500">
+          <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] p-16 text-center text-zinc-500">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
             加载中...
           </div>
         ) : error ? (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-red-500/30 backdrop-blur-xl p-16 text-center text-red-400">
+          <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-red-500/30 p-16 text-center text-red-400">
             {error}
           </div>
         ) : (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
+          <div className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-zinc-800/50">
+                <tr className="border-b border-[var(--border-subtle)]">
                   <th className="text-left py-4 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     模型类型
                   </th>
@@ -161,7 +160,7 @@ export default function RegistryPage() {
                         <td className="py-4 px-5">
                           {model.is_production ? (
                             <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                               <span className="text-xs text-emerald-400 font-medium">
                                 Production
                               </span>

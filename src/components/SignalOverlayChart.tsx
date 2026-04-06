@@ -252,16 +252,14 @@ export function SignalOverlayChart({
       {/* 主图表卡片 */}
       <div
         ref={chartRef}
-        className="group relative rounded-2xl p-5 overflow-hidden transition-all duration-500 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 hover:border-cyan-500/20 backdrop-blur-xl"
+        className="group relative rounded-[14px] p-5 overflow-hidden transition-all duration-500 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]"
       >
-        {/* 顶部渐变线 */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
 
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-cyan-500/10">
-              <TrendingUp className="w-4 h-4 text-cyan-400" />
+            <div className="p-1.5 rounded-lg bg-zinc-500/10">
+              <TrendingUp className="w-4 h-4 text-zinc-400" />
             </div>
             <h3 className="text-sm font-medium text-zinc-300">
               {SYMBOL_LABELS[priceSymbol] ?? priceSymbol} 信号叠加图
@@ -272,7 +270,7 @@ export function SignalOverlayChart({
           </div>
 
           <div className="text-right">
-            <p className="text-lg font-bold text-cyan-400">
+            <p className="text-lg font-bold text-zinc-200">
               {latestPrice.toLocaleString("zh-CN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -300,8 +298,8 @@ export function SignalOverlayChart({
                 className={cn(
                   "px-2 py-0.5 text-[10px] rounded transition-all",
                   selectedRange === range.key
-                    ? "bg-cyan-500/30 text-cyan-400"
-                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                    ? "bg-zinc-700/40 text-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-300 hover:bg-[var(--bg-card-hover)]"
                 )}
               >
                 {range.label}
@@ -479,13 +477,13 @@ function CustomTooltip({
   const riskColor = RISK_LIGHT_BORDER[data.riskLight] ?? "#64748b";
 
   return (
-    <div className="bg-zinc-900/95 border border-zinc-700 rounded-xl p-3 shadow-xl backdrop-blur-sm min-w-[200px]">
+    <div className="bg-zinc-900/95 border border-[var(--border-subtle)] rounded-xl p-3 shadow-xl min-w-[200px]">
       <p className="text-[11px] text-zinc-400 mb-2">{data.date}</p>
 
       {/* 价格 */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] text-zinc-500">SPX</span>
-        <span className="text-sm font-bold text-cyan-400">
+        <span className="text-sm font-bold text-zinc-200">
           {data.value.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
         </span>
       </div>

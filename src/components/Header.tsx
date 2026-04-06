@@ -1,7 +1,7 @@
 /**
- * [INPUT]: (onRunModel?, isLoading?, lastUpdate?, availableDates?, onDateSelect?, selectedDate?) - 所有 props 可选。提供 onRunModel 时显示运行按钮和日期选择器。
- * [OUTPUT]: (<header>) - 顶部粘性工具栏，含 DatePicker 日历选择器 + 运行模型按钮 + 最后更新时间显示。当无 onRunModel 时仅显示标题。
- * [POS]: 位于 /components，被所有页面组件引用。作为用户触发模型运行和切换历史日期的统一入口。
+ * [INPUT]: (onRunModel?, isLoading?, lastUpdate?, availableDates?, onDateSelect?, selectedDate?) - 所有 props 可选。
+ * [OUTPUT]: (<header>) - 顶部粘性工具栏，含 DatePicker + 运行模型按钮 + 最后更新时间。
+ * [POS]: 位于 /components，被所有页面组件引用。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { RefreshCw, Zap } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
 import { DatePicker } from "@/components/DatePicker";
 
@@ -37,27 +37,20 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-10 bg-[#050508]/80 backdrop-blur-xl border-b border-cyan-500/10">
-      {/* 顶部渐变线 */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
-
-      <div className="px-6 py-4">
+    <header className="sticky top-0 z-10 bg-[var(--bg)]/95 backdrop-blur-sm border-b border-[var(--border-subtle)]">
+      <div className="px-6 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-cyan-400" />
-              Dashboard
-            </h2>
             {lastUpdate && (
-              <p className="text-xs text-zinc-500 mt-0.5">
-                最后更新:{" "}
-                <span className="text-zinc-400">
+              <p className="text-[11px] text-[var(--text-faint)]">
+                最后更新{" "}
+                <span className="text-[var(--text-muted)]">
                   {formatDateTime(lastUpdate)}
                 </span>
                 {dataAsOf && (
                   <>
-                    {" · "}数据截至:{" "}
-                    <span className="text-zinc-400">{dataAsOf}</span>
+                    {" "}&middot; 数据截至{" "}
+                    <span className="text-[var(--text-muted)]">{dataAsOf}</span>
                   </>
                 )}
               </p>
@@ -65,8 +58,7 @@ export function Header({
           </div>
 
           {onRunModel && (
-            <div className="flex items-center gap-4">
-              {/* 日历选择器 */}
+            <div className="flex items-center gap-3">
               {availableDates && onDateSelect && (
                 <DatePicker
                   selectedDate={selectedDate}
@@ -75,34 +67,19 @@ export function Header({
                 />
               )}
 
-              {/* 运行按钮 */}
               <button
                 onClick={handleRun}
                 disabled={isLoading}
                 className={cn(
-                  "group relative flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 overflow-hidden",
-                  "bg-gradient-to-r from-cyan-500 to-blue-600 text-white",
-                  "hover:shadow-lg hover:shadow-cyan-500/25",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-opacity duration-100",
+                  "bg-zinc-200 text-zinc-900 hover:opacity-90",
+                  "disabled:opacity-30 disabled:cursor-not-allowed"
                 )}
               >
-                {/* 光效动画 */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-
                 <RefreshCw
-                  className={cn(
-                    "w-4 h-4 relative z-10",
-                    isLoading && "animate-spin"
-                  )}
+                  className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
                 />
-                <span className="relative z-10">
-                  {isLoading ? "运行中..." : "运行模型"}
-                </span>
-
-                {/* 边框辉光 */}
-                {!isLoading && (
-                  <div className="absolute inset-0 rounded-xl border border-cyan-400/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                )}
+                {isLoading ? "运行中..." : "运行模型"}
               </button>
             </div>
           )}

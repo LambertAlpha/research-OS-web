@@ -42,24 +42,21 @@ export function Tooltip({
   const [isMounted, setIsMounted] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
 
-  // 优先从字典获取,否则使用自定义内容
   const info: IndicatorInfo | null = indicatorKey
     ? getIndicatorInfo(indicatorKey)
     : customContent || null;
 
-  // 确保在客户端渲染
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 计算 Tooltip 位置
   const updatePosition = () => {
     if (!triggerRef.current) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
-    const tooltipWidth = 320; // w-80 = 320px
-    const tooltipHeight = 300; // 估算高度
-    const gap = 12; // 间距
+    const tooltipWidth = 300;
+    const tooltipHeight = 280;
+    const gap = 10;
 
     let top = 0;
     let left = 0;
@@ -84,7 +81,6 @@ export function Tooltip({
         break;
     }
 
-    // 边界检测,防止超出视口
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -100,7 +96,6 @@ export function Tooltip({
     setPosition({ top, left });
   };
 
-  // Hover 事件处理
   const handleMouseEnter = () => {
     setIsVisible(true);
     updatePosition();
@@ -110,7 +105,6 @@ export function Tooltip({
     setIsVisible(false);
   };
 
-  // 监听滚动和窗口大小变化
   useEffect(() => {
     if (!isVisible) return;
 
@@ -134,7 +128,7 @@ export function Tooltip({
   const tooltipContent = (
     <div
       className={cn(
-        "fixed z-[9999] opacity-0 invisible transition-all duration-300 pointer-events-none",
+        "fixed z-[9999] opacity-0 invisible transition-all duration-150 pointer-events-none",
         isVisible && "opacity-100 visible"
       )}
       style={{
@@ -142,47 +136,37 @@ export function Tooltip({
         left: `${position.left}px`,
       }}
     >
-      <div
-        className={cn(
-          "w-80 rounded-xl p-4 shadow-2xl",
-          "bg-zinc-900/95 backdrop-blur-xl",
-          "border border-cyan-500/30",
-          "text-left"
-        )}
-      >
-        {/* 顶部渐变线 */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-60" />
-
+      <div className="w-[300px] rounded-xl p-4 shadow-2xl shadow-black/40 bg-[var(--bg-elevated)] border border-[var(--border-visible)] text-left">
         {/* 标题 */}
-        <div className="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">
-          <Eye className="w-4 h-4" />
+        <div className="text-sm font-medium text-zinc-200 mb-2 flex items-center gap-2">
+          <Eye className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           {info.name}
         </div>
 
         {/* 描述 */}
-        <div className="text-sm text-zinc-300 mb-3 leading-relaxed">
+        <div className="text-[13px] text-[var(--text-secondary)] mb-3 leading-relaxed">
           {info.description}
         </div>
 
-        {/* 公式 (如果有) */}
+        {/* 公式 */}
         {info.formula && (
           <div className="mb-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+            <div className="text-[10px] text-[var(--text-faint)] uppercase tracking-wider mb-1">
               计算公式
             </div>
-            <div className="text-xs text-zinc-400 font-mono bg-zinc-950/50 rounded px-2 py-1.5 border border-zinc-800">
+            <div className="text-xs text-[var(--text-muted)] font-mono bg-[var(--bg-inset)] rounded px-2 py-1.5 border border-[var(--border-subtle)]">
               {info.formula}
             </div>
           </div>
         )}
 
-        {/* 阈值 (如果有) */}
+        {/* 阈值 */}
         {info.thresholds && (
           <div className="mb-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+            <div className="text-[10px] text-[var(--text-faint)] uppercase tracking-wider mb-1">
               关键阈值
             </div>
-            <div className="text-xs text-zinc-300 leading-relaxed">
+            <div className="text-xs text-[var(--text-secondary)] leading-relaxed">
               {info.thresholds}
             </div>
           </div>
@@ -191,10 +175,10 @@ export function Tooltip({
         {/* 业务意义 */}
         {info.businessMeaning && (
           <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
-              💡 业务含义
+            <div className="text-[10px] text-[var(--text-faint)] uppercase tracking-wider mb-1">
+              业务含义
             </div>
-            <div className="text-xs text-amber-400/90 leading-relaxed font-medium">
+            <div className="text-xs text-amber-400/70 leading-relaxed">
               {info.businessMeaning}
             </div>
           </div>
@@ -205,26 +189,17 @@ export function Tooltip({
 
   return (
     <>
-      {/* Eye 图标 - 触发器 */}
       <div
         ref={triggerRef}
         className={cn("relative inline-block", className)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div
-          className={cn(
-            "flex items-center justify-center w-5 h-5 rounded-md",
-            "text-zinc-500 hover:text-cyan-400",
-            "transition-all duration-300 cursor-help",
-            "hover:bg-cyan-500/10"
-          )}
-        >
-          <Eye className="w-4 h-4" />
+        <div className="flex items-center justify-center w-4 h-4 rounded text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors duration-100 cursor-help">
+          <Eye className="w-3.5 h-3.5" />
         </div>
       </div>
 
-      {/* Portal: Tooltip 渲染到 body */}
       {isMounted && typeof document !== "undefined" && createPortal(tooltipContent, document.body)}
     </>
   );

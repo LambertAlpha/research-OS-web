@@ -134,13 +134,6 @@ function getScoreColor(score: number): string {
   return "#ef4444";                   // red
 }
 
-function getScoreBgClass(score: number): string {
-  if (score > 1) return "from-emerald-500/10 to-emerald-500/5";
-  if (score > 0) return "from-cyan-500/10 to-cyan-500/5";
-  if (score > -1) return "from-amber-500/10 to-amber-500/5";
-  return "from-red-500/10 to-red-500/5";
-}
-
 function getRiskLevelColor(level: string): string {
   switch ((level || "NORMAL").toUpperCase()) {
     case "LOW":
@@ -274,8 +267,8 @@ export default function EquityPage() {
         {/* 页面标题 */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-cyan-500/10">
-              <BarChart3 className="w-5 h-5 text-cyan-400" />
+            <div className="p-2 rounded-lg bg-zinc-800">
+              <BarChart3 className="w-5 h-5 text-zinc-400" />
             </div>
             <h1 className="text-2xl font-bold text-zinc-100">美股模型</h1>
             {equityOutput?.model_version && (
@@ -291,16 +284,15 @@ export default function EquityPage() {
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mb-4" />
+            <RefreshCw className="w-8 h-8 text-zinc-400 animate-spin mb-4" />
             <p className="text-zinc-500">加载最新数据...</p>
           </div>
         ) : !equityOutput ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 flex items-center justify-center border border-cyan-500/20">
-                <BarChart3 className="w-12 h-12 text-cyan-400 animate-float" />
+              <div className="w-24 h-24 rounded-[14px] bg-[var(--bg-elevated)] flex items-center justify-center border border-[var(--border-subtle)]">
+                <BarChart3 className="w-12 h-12 text-zinc-400 animate-float" />
               </div>
-              <div className="absolute inset-0 rounded-2xl bg-cyan-500/10 blur-xl" />
             </div>
             <h2 className="text-xl font-semibold text-zinc-200 mb-2">暂无数据</h2>
             <p className="text-zinc-500 text-sm">
@@ -315,17 +307,12 @@ export default function EquityPage() {
             <div className="grid grid-cols-3 gap-4 mb-8">
               {/* 市场体制卡 */}
               <div
-                className="relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl"
+                className="relative rounded-[14px] p-6 overflow-hidden border"
                 style={{
-                  background: `linear-gradient(135deg, ${getRegimeColor(regime?.code || "TRANSITION")}15, transparent)`,
+                  backgroundColor: 'var(--bg-card)',
                   borderColor: `${getRegimeColor(regime?.code || "TRANSITION")}40`,
-                  borderWidth: 1,
                 }}
               >
-                <div
-                  className="absolute top-0 left-0 right-0 h-1"
-                  style={{ backgroundColor: getRegimeColor(regime?.code || "TRANSITION") }}
-                />
                 <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" />
                   市场体制
@@ -353,18 +340,11 @@ export default function EquityPage() {
 
               {/* 加权总分卡 */}
               <div
-                className={cn(
-                  "relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl border bg-gradient-to-br",
-                  getScoreBgClass(equityOutput.weighted_score),
-                )}
+                className="relative rounded-[14px] p-6 overflow-hidden border bg-[var(--bg-card)]"
                 style={{
                   borderColor: `${getScoreColor(equityOutput.weighted_score)}40`,
                 }}
               >
-                <div
-                  className="absolute top-0 left-0 right-0 h-1"
-                  style={{ backgroundColor: getScoreColor(equityOutput.weighted_score) }}
-                />
                 <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5" />
                   加权总分
@@ -405,8 +385,7 @@ export default function EquityPage() {
 
               {/* 配置建议卡 */}
               {allocation && (
-                <div className="relative rounded-2xl p-6 overflow-hidden backdrop-blur-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50">
-                  <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+                <div className="relative rounded-[14px] p-6 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                   <div className="text-xs text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <PieChart className="w-3.5 h-3.5" />
                     配置建议
@@ -418,13 +397,13 @@ export default function EquityPage() {
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="text-zinc-400">股票</span>
-                        <span className="text-cyan-400 font-medium">
+                        <span className="text-zinc-200 font-medium">
                           {allocation.equity_pct}%
                         </span>
                       </div>
                       <div className="h-2.5 rounded-full bg-zinc-800 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-cyan-500 transition-all duration-500"
+                          className="h-full rounded-full bg-zinc-400 transition-all duration-500"
                           style={{ width: `${allocation.equity_pct}%` }}
                         />
                       </div>
@@ -472,7 +451,7 @@ export default function EquityPage() {
             {modules.length > 0 && (
               <div className="mb-8">
                 <h2 className="section-title">
-                  <Layers className="w-5 h-5 text-cyan-400" />
+                  <Layers className="w-5 h-5 text-zinc-400" />
                   模块评分
                 </h2>
                 <div className="grid grid-cols-3 gap-4">
@@ -487,9 +466,9 @@ export default function EquityPage() {
                       <div
                         key={mod.name}
                         className={cn(
-                          "group relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border backdrop-blur-xl transition-all duration-300",
-                          hasSubData ? "cursor-pointer hover:border-zinc-700/50" : "",
-                          isExpanded ? "border-zinc-600/50" : "border-zinc-800/50"
+                          "group relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border transition-all duration-300",
+                          hasSubData ? "cursor-pointer hover:bg-[var(--bg-card-hover)]" : "",
+                          isExpanded ? "border-zinc-600/50" : "border-[var(--border-subtle)]"
                         )}
                         onClick={() => hasSubData && setExpandedModule(isExpanded ? null : mod.name)}
                       >
@@ -534,7 +513,7 @@ export default function EquityPage() {
 
                         {/* 展开：子指标详情 */}
                         {isExpanded && hasSubData && (
-                          <div className="mt-4 pt-3 border-t border-zinc-800/50 space-y-2">
+                          <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] space-y-2">
                             {Object.entries(subInputs).map(([key, value]) => {
                               const label = SUB_INDICATOR_LABELS[key] || key;
                               const displayValue = formatSubValue(key, value);
@@ -565,10 +544,9 @@ export default function EquityPage() {
             <div className="grid grid-cols-2 gap-4 mb-8">
               {/* 板块轮动 */}
               {sectorBias && (
-                <div className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                  <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+                <div className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                   <h3 className="text-xs text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-cyan-400" />
+                    <TrendingUp className="w-4 h-4 text-zinc-400" />
                     板块轮动
                   </h3>
 
@@ -618,7 +596,7 @@ export default function EquityPage() {
 
                   {/* 理由 */}
                   {sectorBias.rationale && (
-                    <div className="mt-3 pt-3 border-t border-zinc-800/50">
+                    <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
                       <div className="text-xs text-zinc-500 mb-1">轮动理由</div>
                       <div className="text-sm text-zinc-400">
                         {sectorBias.rationale}
@@ -630,8 +608,7 @@ export default function EquityPage() {
 
               {/* 风险管理 */}
               {riskMgmt && (
-                <div className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                  <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+                <div className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                   <h3 className="text-xs text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4 text-amber-400" />
                     风险管理
@@ -683,11 +660,10 @@ export default function EquityPage() {
                 <div className="divider" />
                 <div className="mb-8">
                   <h2 className="section-title">
-                    <FileText className="w-5 h-5 text-cyan-400" />
+                    <FileText className="w-5 h-5 text-zinc-400" />
                     分析报告
                   </h2>
-                  <div className="relative rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/50 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-50 bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
+                  <div className="relative rounded-[14px] p-5 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
                     <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
                       {equityOutput.report_summary}
                     </pre>
