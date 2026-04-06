@@ -77,6 +77,24 @@ const INDICATOR_GROUPS: Record<string, { title: string; color: string; ids: stri
   },
 };
 
+// ETF 可靠性分级（V8.0 核心创新）
+const INDICATOR_RELIABILITY: Record<string, string> = {
+  A1_ETF_FLOW: "★★★", A2_COINBASE_BAL: "★★★", A3_EXCHANGE_NETFLOW: "★★",
+  A4_WHALE_EXCHANGE: "★★★", A5_REALIZED_CAP_CHANGE: "★★", A6_TREND_ACCUM_SCORE: "★★★",
+  B1_REALIZED_PROFIT: "★★", B2_STH_COST_MVRV: "★★", B3_LTH_MVRV_SLOPE: "★★",
+  B4_SUPPLY_IN_PROFIT: "★★", B5_SELL_SIDE_RISK: "★★★",
+  C1_URPD_ENTITY: "★★", C2_LTH_STH_RATIO: "★★", C3_LTH_NET_POSITION: "★★",
+  C4_SUPPLY_BEHAVIOR: "★★★",
+  D1_OI_LIQUIDATION: "★★", D2_FUNDING_RATE: "★", D3_FUTURES_SPOT_CVD: "★★★",
+  D4_PERP_SPOT_GAP: "★", D5_OPTIONS_PC_SKEW: "★★",
+};
+
+// ETF 时代需反向解读的指标
+const ETF_REINTERPRET: Record<string, string> = {
+  D4_PERP_SPOT_GAP: "ETF 时代反向解读：负价差+上涨=健康（现货买盘主导）",
+  D2_FUNDING_RATE: "ETF 时代反向解读：负费率+上涨=行情未过热",
+};
+
 const INDICATOR_NAMES: Record<string, string> = {
   A1_ETF_FLOW: "ETF 净流入",
   A2_COINBASE_BAL: "Coinbase 余额",
@@ -205,6 +223,7 @@ export default function BtcPage() {
   const accCount = Object.values(indicatorStates).filter((s) => s === "accumulation").length;
   const distCount = Object.values(indicatorStates).filter((s) => s === "distribution").length;
   const neuCount = totalIndicators - accCount - distCount;
+  const allNeutral = totalIndicators > 0 && accCount === 0 && distCount === 0;
 
   return (
     <div className="min-h-screen">
@@ -253,6 +272,20 @@ export default function BtcPage() {
           </div>
         ) : (
           <>
+            {/* 数据源状态横幅：当所有指标都是中性时，提示数据源未接入 */}
+            {allNeutral && (
+              <div className="mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="text-sm font-medium text-amber-400">Data Sources Pending</div>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    20 indicators are showing neutral because on-chain data sources (Glassnode / CryptoQuant / CoinGlass / Deribit) are not yet connected.
+                    The signal below is a placeholder. Real signals will appear after data integration.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ================================================================
                 第一行：信号 + 信心度 + 验证状态
                 ================================================================ */}
@@ -487,24 +520,30 @@ export default function BtcPage() {
                         const stateCfg = STATE_CONFIG[state] ?? STATE_CONFIG["neutral"]!;
                         const StateIcon = stateCfg.icon;
 
+                        const reliability = INDICATOR_RELIABILITY[indId] || "";
+                        const etfWarning = ETF_REINTERPRET[indId];
+
                         return (
-                          <div
-                            key={indId}
-                            className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-zinc-800/30 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono text-zinc-600 w-6">
-                                {indId.split("_")[0]}
-                              </span>
-                              <span className="text-sm text-zinc-300">
-                                {INDICATOR_NAMES[indId] || indId}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <StateIcon
-                                className="w-3.5 h-3.5"
-                                style={{ color: stateCfg.color }}
-                              />
+                          <div key={indId}>
+                            <div
+                              className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-zinc-800/30 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono text-zinc-600 w-6">
+                                  {indId.split("_")[0]}
+                                </span>
+                                <span className="text-sm text-zinc-300">
+                                  {INDICATOR_NAMES[indId] || indId}
+                                </span>
+                                <span className="text-[10px] text-amber-500/70" title="ETF post reliability">
+                                  {reliability}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <StateIcon
+                                  className="w-3.5 h-3.5"
+                                  style={{ color: stateCfg.color }}
+                                />
                               <span
                                 className="text-xs font-medium min-w-[32px] text-right"
                                 style={{ color: stateCfg.color }}
@@ -512,6 +551,13 @@ export default function BtcPage() {
                                 {stateCfg.label}
                               </span>
                             </div>
+                          </div>
+                          {etfWarning && (
+                            <div className="ml-10 px-2 pb-1 text-[10px] text-amber-400/70 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              {etfWarning}
+                            </div>
+                          )}
                           </div>
                         );
                       })}
