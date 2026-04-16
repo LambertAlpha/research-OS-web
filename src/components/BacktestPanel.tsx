@@ -23,14 +23,11 @@ import {
 } from "lucide-react";
 import { SignalOverlayChart } from "@/components/SignalOverlayChart";
 import apiClient from "@/lib/api";
-import type { BacktestResult, BacktestSignal, SignalChange } from "@/types/api";
+import type { BacktestResult, BacktestSignal, SignalChange, BacktestModelType } from "@/types/api";
 import { cn } from "@/lib/utils";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type BacktestModelType = "combined" | "liquidity" | "macro" | "equity" | "btc";
+// Re-export for convenience
+export type { BacktestModelType };
 
 export interface BacktestPanelProps {
   model: BacktestModelType;
@@ -230,7 +227,12 @@ export function BacktestPanel({
   const applyPreset = (months: number) => {
     const end = new Date();
     const start = new Date();
+    // 先设日为 1 避免 setMonth 溢出（如 3/31 - 1 月 → 3/3 而非 2/28）
+    start.setDate(1);
     start.setMonth(start.getMonth() - months);
+    // 恢复日期，若超出则截断到月末
+    const day = Math.min(end.getDate(), new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate());
+    start.setDate(day);
     setStartDate(start.toISOString().slice(0, 10));
     setEndDate(end.toISOString().slice(0, 10));
   };
@@ -370,7 +372,7 @@ export function BacktestPanel({
       )}
 
       {result && result.total_signals > 0 && (
-        <>
+        <div className={isLoading ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
           {/* Stat cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map((card) => (
@@ -391,7 +393,7 @@ export function BacktestPanel({
 
           {/* Signal change timeline */}
           <SignalChangeTimeline changes={result.signal_changes} />
-        </>
+        </div>
       )}
     </div>
   );
@@ -539,6 +541,7 @@ function SignalDetailTable({
         {signals.length > 10 && (
           <button
             onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
             className="text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors flex items-center gap-1"
           >
             {expanded ? (

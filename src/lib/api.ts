@@ -23,6 +23,7 @@ import type {
   IndicatorRecord,
   AlertRecord,
   BacktestResult,
+  BacktestModelType,
   SchedulerBatchesResponse,
 } from "@/types/api";
 
@@ -423,7 +424,7 @@ class ApiClient {
     endDate: string,
     priceSymbol: string = "SPX",
     forceRefresh: boolean = false,
-    model: string = "combined",
+    model: BacktestModelType = "combined",
   ): Promise<BacktestResult> {
     return this.request("/api/backtest/signals", {
       method: "POST",

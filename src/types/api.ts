@@ -406,7 +406,7 @@ export interface IndicatorRecord {
 // 单个信号快照
 export interface BacktestSignal {
   date: string; // YYYY-MM-DD
-  model: string; // "combined" | "liquidity" | "macro" | "equity" | "btc"
+  model: BacktestModelType;
   risk_light: "green" | "yellow" | "red" | "unknown";
   liquidity_score: number;
   leverage_coef: number;
@@ -436,11 +436,14 @@ export interface SignalChange {
   description: string;
 }
 
+/** 回测支持的模型类型 */
+export type BacktestModelType = "combined" | "liquidity" | "macro" | "equity" | "btc";
+
 // 回测结果
 export interface BacktestResult {
   start_date: string;
   end_date: string;
-  model: string; // "combined" | "liquidity" | "macro" | "equity" | "btc"
+  model: BacktestModelType;
   total_signals: number;
   price_series: RawDataPoint[];
   signals: BacktestSignal[];
