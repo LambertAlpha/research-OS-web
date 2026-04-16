@@ -12,7 +12,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
-import { BacktestPanel } from "@/components/BacktestPanel";
+import dynamic from "next/dynamic";
+const BacktestPanel = dynamic(
+  () => import("@/components/BacktestPanel").then((m) => ({ default: m.BacktestPanel })),
+  { ssr: false }
+);
 import apiClient from "@/lib/api";
 
 import type { BtcOutput, HistoryRecord } from "@/types/api";

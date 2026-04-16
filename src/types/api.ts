@@ -427,7 +427,9 @@ export interface SignalChange {
     | "macro_state"
     | "gate_closed"
     | "gate_opened"
-    | "hard_stop";
+    | "hard_stop"
+    | "regime_change"
+    | "btc_signal_change";
   from?: string;
   to?: string;
   gate?: string;

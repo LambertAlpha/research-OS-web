@@ -17,7 +17,11 @@ import apiClient from "@/lib/api";
 import { getRiskLightColor, getRiskLightLabel, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
-import { BacktestPanel } from "@/components/BacktestPanel";
+import dynamic from "next/dynamic";
+const BacktestPanel = dynamic(
+  () => import("@/components/BacktestPanel").then((m) => ({ default: m.BacktestPanel })),
+  { ssr: false }
+);
 import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function LiquidityPage() {

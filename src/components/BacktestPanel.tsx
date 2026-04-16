@@ -362,7 +362,14 @@ export function BacktestPanel({
       )}
 
       {/* Results */}
-      {result && (
+      {result && result.total_signals === 0 && (
+        <div className="rounded-[14px] p-5 bg-amber-500/10 border border-amber-500/30 text-center">
+          <p className="text-amber-400 text-sm">该日期范围内无信号数据</p>
+          <p className="text-zinc-500 text-xs mt-1">请尝试扩大日期范围或检查数据源</p>
+        </div>
+      )}
+
+      {result && result.total_signals > 0 && (
         <>
           {/* Stat cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -475,6 +482,16 @@ function SignalChangeRow({ change }: { change: SignalChange }) {
     },
     hard_stop: {
       icon: <AlertTriangle className="w-3 h-3" />,
+      color: "text-orange-400",
+      bg: "bg-orange-500/10",
+    },
+    regime_change: {
+      icon: <TrendingUp className="w-3 h-3" />,
+      color: "text-blue-400",
+      bg: "bg-blue-500/10",
+    },
+    btc_signal_change: {
+      icon: <Activity className="w-3 h-3" />,
       color: "text-orange-400",
       bg: "bg-orange-500/10",
     },

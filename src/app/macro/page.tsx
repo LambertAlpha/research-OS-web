@@ -18,7 +18,11 @@ import apiClient from "@/lib/api";
 import { cn, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
-import { BacktestPanel } from "@/components/BacktestPanel";
+import dynamic from "next/dynamic";
+const BacktestPanel = dynamic(
+  () => import("@/components/BacktestPanel").then((m) => ({ default: m.BacktestPanel })),
+  { ssr: false }
+);
 import {
   Globe,
   BarChart3,

@@ -15,7 +15,11 @@ import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { EquityOutput, HistoryRecord } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
-import { BacktestPanel } from "@/components/BacktestPanel";
+import dynamic from "next/dynamic";
+const BacktestPanel = dynamic(
+  () => import("@/components/BacktestPanel").then((m) => ({ default: m.BacktestPanel })),
+  { ssr: false }
+);
 import {
   BarChart3,
   TrendingUp,
