@@ -10,7 +10,9 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+// @ts-expect-error - Next.js 自动提供 react-dom 类型
+import { createPortal } from "react-dom";
 import { Header } from "@/components/Header";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
 import dynamic from "next/dynamic";
@@ -853,65 +855,98 @@ function PatternTooltip({
   indicatorStates: Record<string, string>;
 }) {
   const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [mounted, setMounted] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const required = PATTERN_REQUIRED_STATES[patternId];
+
+  useEffect(() => { setMounted(true); }, []);
+
   if (!required || Object.keys(required).length === 0) return null;
 
-  return (
+  const updatePos = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const tipW = 320;
+    const tipH = Object.keys(required).length * 52 + 80;
+    let top = rect.top - tipH - 8 + window.scrollY;
+    let left = rect.left + window.scrollX;
+    // 防止超出视口
+    if (left + tipW > window.innerWidth - 12) left = window.innerWidth - tipW - 12;
+    if (left < 12) left = 12;
+    if (top < 12 + window.scrollY) top = rect.bottom + 8 + window.scrollY;
+    setPos({ top, left });
+  };
+
+  const handleEnter = () => { setShow(true); updatePos(); };
+  const handleLeave = () => { setShow(false); };
+
+  const tooltipContent = (
     <div
-      className="relative mt-2"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
+      className="fixed z-[9999] pointer-events-none"
+      style={{ top: `${pos.top}px`, left: `${pos.left}px`, opacity: show ? 1 : 0, transition: "opacity 150ms" }}
     >
-      <div className="flex items-center gap-1 cursor-help text-zinc-600 hover:text-zinc-400 transition-colors">
-        <Eye className="w-3 h-3" />
-        <span className="text-[10px]">触发条件</span>
-      </div>
-
-      {show && (
-        <div className="absolute bottom-full left-0 mb-2 z-50 w-64 rounded-xl p-3 shadow-2xl shadow-black/50 bg-[var(--bg-elevated)] border border-[var(--border-visible)]">
-          <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 font-semibold">
-            需要全部满足
-          </div>
-          <div className="space-y-1.5">
-            {Object.entries(required).map(([indId, reqState]) => {
-              const currentState = indicatorStates[indId] || "neutral";
-              const isMatch = currentState === reqState;
-              const reqCfg = STATE_CONFIG[reqState] ?? STATE_CONFIG["neutral"]!;
-              const curCfg = STATE_CONFIG[currentState] ?? STATE_CONFIG["neutral"]!;
-
-              return (
-                <div key={indId} className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2 text-[11px]">
-                    {isMatch ? (
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-                    ) : (
-                      <XCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
-                    )}
-                    <span className="text-zinc-400 truncate flex-1">
-                      {INDICATOR_NAMES[indId] || indId}
-                    </span>
-                    <span className="text-[10px] flex-shrink-0" style={{ color: curCfg.color }}>
-                      {curCfg.label}
-                    </span>
-                    <span className="text-zinc-600 flex-shrink-0">/</span>
-                    <span className="text-[10px] flex-shrink-0" style={{ color: reqCfg.color }}>
-                      {reqCfg.label}
-                    </span>
-                  </div>
-                  {INDICATOR_THRESHOLDS[indId] && (
-                    <div className="text-[9px] text-zinc-600 ml-5 leading-tight">
-                      {INDICATOR_THRESHOLDS[indId]}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] text-[10px] text-zinc-600">
-            格式：当前状态 / 需要状态
-          </div>
+      <div className="w-80 rounded-xl p-4 shadow-2xl shadow-black/60 bg-zinc-900 border border-zinc-700">
+        <div className="text-xs text-zinc-400 font-semibold mb-3 flex items-center gap-2">
+          <Eye className="w-3.5 h-3.5 text-zinc-500" />
+          触发条件 — 需要全部满足
         </div>
-      )}
+        <div className="space-y-2.5">
+          {Object.entries(required).map(([indId, reqState]) => {
+            const currentState = indicatorStates[indId] || "neutral";
+            const isMatch = currentState === reqState;
+            const reqCfg = STATE_CONFIG[reqState] ?? STATE_CONFIG["neutral"]!;
+            const curCfg = STATE_CONFIG[currentState] ?? STATE_CONFIG["neutral"]!;
+
+            return (
+              <div key={indId} className="rounded-lg bg-zinc-800/60 px-3 py-2">
+                <div className="flex items-center gap-2 mb-1">
+                  {isMatch ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  )}
+                  <span className="text-sm text-zinc-200 font-medium flex-1">
+                    {INDICATOR_NAMES[indId] || indId}
+                  </span>
+                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ color: curCfg.color, backgroundColor: `${curCfg.color}15` }}>
+                    {curCfg.label}
+                  </span>
+                  <span className="text-zinc-600 text-xs">→</span>
+                  <span className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ color: reqCfg.color, backgroundColor: `${reqCfg.color}15` }}>
+                    {reqCfg.label}
+                  </span>
+                </div>
+                {INDICATOR_THRESHOLDS[indId] && (
+                  <div className="text-[11px] text-zinc-500 ml-6">
+                    {INDICATOR_THRESHOLDS[indId]}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-3 pt-2 border-t border-zinc-700/50 text-[11px] text-zinc-500">
+          当前状态 → 需要状态
+        </div>
+      </div>
     </div>
+  );
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        className="mt-2"
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      >
+        <div className="flex items-center gap-1.5 cursor-help text-zinc-600 hover:text-zinc-300 transition-colors">
+          <Eye className="w-3.5 h-3.5" />
+          <span className="text-[11px]">触发条件</span>
+        </div>
+      </div>
+      {mounted && typeof document !== "undefined" && createPortal(tooltipContent, document.body)}
+    </>
   );
 }
