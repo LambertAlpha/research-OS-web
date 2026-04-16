@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 页面加载时自动获取最新 BTC 模型输出，用户可点击"运行模型"刷新。
- * [OUTPUT]: (JSX) - BTC 中期模型详情页，以结构模式(P1-P8)为核心展示，辅以指标热力图和信号摘要。
+ * [OUTPUT]: (JSX) - BTC 中期模型详情页，以结构模式(P1-P8)为核心展示，辅以指标热力图（含阈值提示）和信号摘要。
  * [POS]: BTC 路由 (/btc)。展示 BTC v8.0 模式识别架构的五层输出，通过 /api/btc 获取数据。
  *         页面布局：模式总览(Hero) → 触发模式详情 → 指标热力图 → 信号摘要(降级) → 报告/回测/字典。
  *
@@ -125,6 +125,30 @@ const INDICATOR_NAMES: Record<string, string> = {
   D3_FUTURES_SPOT_CVD: "期现 CVD",
   D4_PERP_SPOT_GAP: "永续-现货价差",
   D5_OPTIONS_PC_SKEW: "期权 P/C+Skew",
+};
+
+// 每个指标的阈值描述（让用户理解为什么某指标处于某状态）
+const INDICATOR_THRESHOLDS: Record<string, string> = {
+  A1_ETF_FLOW: ">150M=累积, <-150M=释放",
+  A2_COINBASE_BAL: "7D Δ<-500=累积, >500=释放",
+  A3_EXCHANGE_NETFLOW: "<-5K=累积, >5K=释放",
+  A4_WHALE_EXCHANGE: "P<20=累积, P>80=释放",
+  A5_REALIZED_CAP_CHANGE: "小户+新币增长=累积",
+  A6_TREND_ACCUM_SCORE: ">0.5且多群体=累积, <-0.5=释放",
+  B1_REALIZED_PROFIT: "缓升=累积, 连续飙升≥3日=释放",
+  B2_STH_COST_MVRV: "MVRV>1且稳定=累积, <0.9=释放",
+  B3_LTH_MVRV_SLOPE: "斜率>0=累积, <0=释放",
+  B4_SUPPLY_IN_PROFIT: "80-95%=累积, 65-80%=中性, >95%或<60%=释放",
+  B5_SELL_SIDE_RISK: "P<30=累积, P>70=释放",
+  C1_URPD_ENTITY: "密集区近价格=累积, 真空区=释放",
+  C2_LTH_STH_RATIO: "比例上升=累积, 快速下降=释放",
+  C3_LTH_NET_POSITION: "30D Δ>0=累积, <0=释放",
+  C4_SUPPLY_BEHAVIOR: "conviction/momentum=累积, profit_taking/loss_selling=释放",
+  D1_OI_LIQUIDATION: "OI上升+重建=累积, OI下降+清算飙升=释放",
+  D2_FUNDING_RATE: "低/中性费率=累积, 持续过高=释放",
+  D3_FUTURES_SPOT_CVD: "现货CVD上升=累积, 期货领跑+现货弱=释放",
+  D4_PERP_SPOT_GAP: "价差<0=累积(ETF时代), >0.3=释放",
+  D5_OPTIONS_PC_SKEW: "P/C<0.7且Skew<0=累积, P/C>1且Skew>0=释放",
 };
 
 const PATTERN_NAMES: Record<string, { emoji: string; desc: string }> = {
@@ -412,17 +436,21 @@ export default function BtcPage() {
                       <div className="text-xs font-medium text-zinc-300 mb-1 leading-tight capitalize">
                         {shortName.toLowerCase()}
                       </div>
-                      <div className="text-[10px] text-zinc-500 font-mono">
-                        {patId.split("_")[0]}
-                      </div>
-                      {isTriggered && triggered && (
-                        <div
-                          className="mt-2 text-xs font-bold"
-                          style={{ color: dirInfo.color }}
-                        >
-                          {triggered.matched_count}/{triggered.required_count}
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          {patId.split("_")[0]}
                         </div>
-                      )}
+                        {isTriggered && triggered && (
+                          <div
+                            className="text-xs font-bold"
+                            style={{ color: dirInfo.color }}
+                          >
+                            {triggered.matched_count}/{triggered.required_count}
+                          </div>
+                        )}
+                      </div>
+                      {/* 悬浮指标详情 */}
+                      <PatternTooltip patternId={patId} indicatorStates={indicatorStates} />
                     </div>
                   );
                 })}
@@ -681,6 +709,7 @@ export default function BtcPage() {
                               <span
                                 className="text-xs font-medium min-w-[32px] text-right"
                                 style={{ color: stateCfg.color }}
+                                title={INDICATOR_THRESHOLDS[indId] || undefined}
                               >
                                 {stateCfg.label}
                               </span>
@@ -808,6 +837,81 @@ export default function BtcPage() {
         <div className="divider" />
         <IndicatorDictionary modules={["BTC_Price", "BTC_Flow", "BTC_Valuation", "BTC_Supply", "BTC_Derivatives"]} defaultExpanded />
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// 模式悬浮详情组件
+// ============================================================================
+
+function PatternTooltip({
+  patternId,
+  indicatorStates,
+}: {
+  patternId: string;
+  indicatorStates: Record<string, string>;
+}) {
+  const [show, setShow] = useState(false);
+  const required = PATTERN_REQUIRED_STATES[patternId];
+  if (!required || Object.keys(required).length === 0) return null;
+
+  return (
+    <div
+      className="relative mt-2"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <div className="flex items-center gap-1 cursor-help text-zinc-600 hover:text-zinc-400 transition-colors">
+        <Eye className="w-3 h-3" />
+        <span className="text-[10px]">触发条件</span>
+      </div>
+
+      {show && (
+        <div className="absolute bottom-full left-0 mb-2 z-50 w-64 rounded-xl p-3 shadow-2xl shadow-black/50 bg-[var(--bg-elevated)] border border-[var(--border-visible)]">
+          <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 font-semibold">
+            需要全部满足
+          </div>
+          <div className="space-y-1.5">
+            {Object.entries(required).map(([indId, reqState]) => {
+              const currentState = indicatorStates[indId] || "neutral";
+              const isMatch = currentState === reqState;
+              const reqCfg = STATE_CONFIG[reqState] ?? STATE_CONFIG["neutral"]!;
+              const curCfg = STATE_CONFIG[currentState] ?? STATE_CONFIG["neutral"]!;
+
+              return (
+                <div key={indId} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2 text-[11px]">
+                    {isMatch ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                    )}
+                    <span className="text-zinc-400 truncate flex-1">
+                      {INDICATOR_NAMES[indId] || indId}
+                    </span>
+                    <span className="text-[10px] flex-shrink-0" style={{ color: curCfg.color }}>
+                      {curCfg.label}
+                    </span>
+                    <span className="text-zinc-600 flex-shrink-0">/</span>
+                    <span className="text-[10px] flex-shrink-0" style={{ color: reqCfg.color }}>
+                      {reqCfg.label}
+                    </span>
+                  </div>
+                  {INDICATOR_THRESHOLDS[indId] && (
+                    <div className="text-[9px] text-zinc-600 ml-5 leading-tight">
+                      {INDICATOR_THRESHOLDS[indId]}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] text-[10px] text-zinc-600">
+            格式：当前状态 / 需要状态
+          </div>
+        </div>
+      )}
     </div>
   );
 }
