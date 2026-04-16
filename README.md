@@ -104,7 +104,7 @@ bun run start
 
 | 路径 | 页面 | 说明 |
 |------|------|------|
-| `/` | Overview | 全局市场概览仪表板 |
+| `/` | → `/macro` | 重定向到 Macro 页面 |
 | `/liquidity` | Liquidity | 流动性模型 v3.0 深度分析 |
 | `/macro` | Macro | 宏观模型 v4.0 多维度信号 |
 | `/history` | History | 规则触发与告警历史记录 |

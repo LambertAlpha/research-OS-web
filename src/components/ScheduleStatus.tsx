@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 无 props，自动从 /api/scheduler/batches 获取数据。
  * [OUTPUT]: (<section>) - 数据调度状态面板，展示 4 个批次的运行时间、状态、下次更新时间。
- * [POS]: 可复用组件，可在 Overview / Settings 等页面引入。
+ * [POS]: 可复用组件，可在 Settings 等页面引入。当前暂无页面引用，保留备用。
  */
 "use client";
 

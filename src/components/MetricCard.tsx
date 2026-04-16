@@ -1,7 +1,7 @@
 /**
  * [INPUT]: (label, value, sublabel?, color?, icon?, trend?, indicatorKey?) - 指标名称、数值、颜色和趋势方向、可选的指标解释 key。
  * [OUTPUT]: (<div>) - 扁平暗色指标卡片,支持悬浮解释 Tooltip。
- * [POS]: 位于 /components,被 Overview 页面引用。展示风险灯号、流动性评分、杠杆系数等核心数值。
+ * [POS]: 位于 /components，通用指标卡片组件。展示风险灯号、流动性评分、杠杆系数等核心数值。当前暂无页面引用，保留备用。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更,必须同步更新此 Header。

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: (data: RawDataPoint[], title, color?, showArea?, referenceLines?) - 时序数据点、标题、图表样式配置。
  * [OUTPUT]: (<div>) - 基于 Recharts 的交互式图表卡片，支持时间段选择、鼠标滚轮缩放、面积图/折线图。
- * [POS]: 位于 /components，被 Overview/Liquidity/Macro 三个页面引用。通用金融数据可视化组件。
+ * [POS]: 位于 /components，被 Liquidity/Macro 等页面引用。通用金融数据可视化组件。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。

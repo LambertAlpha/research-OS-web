@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
   // 这会生成独立的服务器文件，不依赖 node_modules
   output: "standalone",
 
+  // 首页重定向到 Macro 页面（Overview 已移除）
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/macro",
+        permanent: false,
+      },
+    ];
+  },
+
   // API 代理：解决 HTTPS → HTTP 混合内容问题
   // 前端请求 /api/* → Vercel 代理 → 后端服务器
   // BACKEND_URL 必须在 Vercel 环境变量中配置

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: (gate: GateStatus) - 门控状态对象，含 name/status/value/threshold/message。
  * [OUTPUT]: (<div>) - 闸门状态卡片，含状态指示器、值/阈值显示、进度条、Tooltip 悬浮解释。
- * [POS]: 位于 /components，被 Overview 和 Macro 页面引用。可视化 Layer3 风险闸门矩阵中的单个闸门。
+ * [POS]: 位于 /components，被 Macro 页面引用。可视化 Layer3 风险闸门矩阵中的单个闸门。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
