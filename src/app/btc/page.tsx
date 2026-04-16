@@ -622,7 +622,7 @@ export default function BtcPage() {
 
         {/* 信号回测 */}
         <div className="divider" />
-        <BacktestPanel model="btc" defaultPriceSymbol="BTC-USD" priceSymbols={[{ value: "BTC-USD", label: "Bitcoin" }]} />
+        <BacktestPanel model="btc" />
 
         {/* 指标字典 — 始终显示 */}
         <div className="divider" />

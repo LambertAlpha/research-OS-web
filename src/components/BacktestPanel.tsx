@@ -43,11 +43,29 @@ export interface BacktestPanelProps {
 // Constants
 // ============================================================================
 
-const DEFAULT_PRICE_SYMBOLS = [
-  { value: "SPX", label: "S&P 500" },
-  { value: "NDX", label: "NASDAQ 100" },
-  { value: "BTC-USD", label: "Bitcoin" },
-];
+/** 按模型定制的价格基准选项 */
+const MODEL_PRICE_SYMBOLS: Record<BacktestModelType, { value: string; label: string }[]> = {
+  combined: [
+    { value: "SPX", label: "S&P 500" },
+    { value: "NDX", label: "NASDAQ 100" },
+    { value: "BTC-USD", label: "Bitcoin" },
+  ],
+  liquidity: [
+    { value: "SPX", label: "S&P 500" },
+    { value: "NDX", label: "NASDAQ 100" },
+  ],
+  macro: [
+    { value: "SPX", label: "S&P 500" },
+    { value: "NDX", label: "NASDAQ 100" },
+  ],
+  equity: [
+    { value: "SPX", label: "S&P 500" },
+    { value: "NDX", label: "NASDAQ 100" },
+  ],
+  btc: [
+    { value: "BTC-USD", label: "Bitcoin" },
+  ],
+};
 
 const PRESETS = [
   { label: "6个月", months: 6 },
@@ -164,13 +182,15 @@ function computeStatCards(
 
 export function BacktestPanel({
   model,
-  defaultPriceSymbol = "SPX",
-  priceSymbols = DEFAULT_PRICE_SYMBOLS,
+  defaultPriceSymbol,
+  priceSymbols,
 }: BacktestPanelProps) {
+  const resolvedSymbols = priceSymbols ?? MODEL_PRICE_SYMBOLS[model] ?? MODEL_PRICE_SYMBOLS.combined;
+  const resolvedDefault = defaultPriceSymbol ?? resolvedSymbols[0]?.value ?? "SPX";
   const defaults = getDefaultDates();
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
-  const [priceSymbol, setPriceSymbol] = useState(defaultPriceSymbol);
+  const [priceSymbol, setPriceSymbol] = useState(resolvedDefault);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -261,7 +281,7 @@ export function BacktestPanel({
               标的资产
             </label>
             <div className="flex gap-1.5">
-              {priceSymbols.map((s) => (
+              {resolvedSymbols.map((s) => (
                 <button
                   key={s.value}
                   onClick={() => handleSymbolChange(s.value)}
