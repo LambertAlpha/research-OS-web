@@ -185,18 +185,18 @@ export default function IndicatorsPage() {
                 )}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className={cn("w-1.5 h-1.5 rounded-full", item.dotColor)} />
-                  <span className={cn("text-xs font-semibold", item.color.split(" ")[0])}>
+                  <span className={cn("w-2 h-2 rounded-full", item.dotColor)} />
+                  <span className={cn("text-sm font-semibold", item.color.split(" ")[0])}>
                     {item.batch}
                   </span>
                   {item.triggerModel && (
-                    <Zap className="w-3 h-3 text-amber-400 ml-auto" />
+                    <Zap className="w-3.5 h-3.5 text-amber-400 ml-auto" />
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-300 font-medium mb-0.5">
+                <p className="text-xs text-zinc-300 font-medium mb-0.5">
                   {item.schedule}
                 </p>
-                <p className="text-[11px] text-zinc-500 leading-snug">
+                <p className="text-xs text-zinc-500 leading-snug">
                   {item.content}
                 </p>
               </div>
