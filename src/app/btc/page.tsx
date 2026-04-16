@@ -12,6 +12,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
+import { BacktestPanel } from "@/components/BacktestPanel";
 import apiClient from "@/lib/api";
 
 import type { BtcOutput, HistoryRecord } from "@/types/api";
@@ -618,6 +619,10 @@ export default function BtcPage() {
             )}
           </>
         )}
+
+        {/* 信号回测 */}
+        <div className="divider" />
+        <BacktestPanel model="btc" defaultPriceSymbol="BTC-USD" priceSymbols={[{ value: "BTC-USD", label: "Bitcoin" }]} />
 
         {/* 指标字典 — 始终显示 */}
         <div className="divider" />

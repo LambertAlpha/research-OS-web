@@ -17,6 +17,7 @@ import apiClient from "@/lib/api";
 import { getRiskLightColor, getRiskLightLabel, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
+import { BacktestPanel } from "@/components/BacktestPanel";
 import { Droplets, AlertTriangle, BarChart3, Zap, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function LiquidityPage() {
@@ -493,6 +494,10 @@ export default function LiquidityPage() {
 
           </>
         ) : null}
+
+        {/* 信号回测 */}
+        <div className="divider" />
+        <BacktestPanel model="liquidity" />
 
         {/* 指标字典 — 始终显示，不依赖模型输出 */}
         <div className="divider" />

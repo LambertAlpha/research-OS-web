@@ -15,6 +15,7 @@ import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { EquityOutput, HistoryRecord } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
+import { BacktestPanel } from "@/components/BacktestPanel";
 import {
   BarChart3,
   TrendingUp,
@@ -674,6 +675,10 @@ export default function EquityPage() {
 
           </>
         )}
+
+        {/* 信号回测 */}
+        <div className="divider" />
+        <BacktestPanel model="equity" />
 
         {/* 指标字典 — 始终显示，不依赖模型输出 */}
         <div className="divider" />

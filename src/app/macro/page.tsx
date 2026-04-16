@@ -18,6 +18,7 @@ import apiClient from "@/lib/api";
 import { cn, formatNumber } from "@/lib/utils";
 import type { ModelOutput, RawDataPoint, HistoryRecord } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
+import { BacktestPanel } from "@/components/BacktestPanel";
 import {
   Globe,
   BarChart3,
@@ -688,6 +689,10 @@ export default function MacroPage() {
 
           </>
         ) : null}
+
+        {/* 信号回测 */}
+        <div className="divider" />
+        <BacktestPanel model="macro" />
 
         {/* 指标字典 — 始终显示，不依赖模型输出 */}
         <div className="divider" />

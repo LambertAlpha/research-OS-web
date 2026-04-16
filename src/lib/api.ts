@@ -416,12 +416,14 @@ class ApiClient {
   /**
    * 运行回测 - 生成历史信号序列
    * forceRefresh=true 时忽略后端缓存，强制重新计算
+   * model: "combined" | "liquidity" | "macro" | "equity" | "btc"
    */
   async runBacktest(
     startDate: string,
     endDate: string,
     priceSymbol: string = "SPX",
-    forceRefresh: boolean = false
+    forceRefresh: boolean = false,
+    model: string = "combined",
   ): Promise<BacktestResult> {
     return this.request("/api/backtest/signals", {
       method: "POST",
@@ -430,6 +432,7 @@ class ApiClient {
         end_date: endDate,
         price_symbol: priceSymbol,
         force_refresh: forceRefresh,
+        model,
       }),
     });
   }

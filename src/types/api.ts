@@ -406,6 +406,7 @@ export interface IndicatorRecord {
 // 单个信号快照
 export interface BacktestSignal {
   date: string; // YYYY-MM-DD
+  model: string; // "combined" | "liquidity" | "macro" | "equity" | "btc"
   risk_light: "green" | "yellow" | "red" | "unknown";
   liquidity_score: number;
   leverage_coef: number;
@@ -414,16 +415,8 @@ export interface BacktestSignal {
   gates_closed: string[];
   hard_stop_triggered: boolean;
   forbidden_strategies: string[];
-  key_metrics: {
-    net_liquidity_delta?: number | null;
-    sofr_iorb?: number | null;
-    move?: number | null;
-    move_weekly_change?: number | null;
-    corr_20d?: number | null;
-    corr_60d?: number | null;
-    hy_oas?: number | null;
-    yield_curve_2s10s?: number | null;
-  };
+  summary: Record<string, unknown>; // model-specific data
+  key_metrics: Record<string, number | null>;
 }
 
 // 信号变更事件
@@ -445,6 +438,7 @@ export interface SignalChange {
 export interface BacktestResult {
   start_date: string;
   end_date: string;
+  model: string; // "combined" | "liquidity" | "macro" | "equity" | "btc"
   total_signals: number;
   price_series: RawDataPoint[];
   signals: BacktestSignal[];
