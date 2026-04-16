@@ -14,7 +14,7 @@ import { Header } from "@/components/Header";
 import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { IndicatorRecord } from "@/types/api";
-import { BookOpen, RefreshCw, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { BookOpen, RefreshCw, Search, ChevronDown, ChevronRight, Clock, Zap } from "lucide-react";
 
 /** 模块筛选选项 */
 /** 模块对应的颜色 */
@@ -52,6 +52,50 @@ const FREQUENCY_LABELS: Record<string, string> = {
   Q: "季频",
   I: "日内",
 };
+
+/** 数据更新时间表 */
+const UPDATE_SCHEDULE = [
+  {
+    batch: "Daily",
+    schedule: "Mon–Fri 18:00 ET",
+    content: "市场行情、利率、BTC",
+    triggerModel: false,
+    color: "text-zinc-400 border-zinc-500/30",
+    dotColor: "bg-zinc-400",
+  },
+  {
+    batch: "Weekly",
+    schedule: "Sat 06:00 CST",
+    content: "Fed 资负表、情绪、流动性",
+    triggerModel: true,
+    color: "text-violet-400 border-violet-500/30",
+    dotColor: "bg-violet-400",
+  },
+  {
+    batch: "Monthly",
+    schedule: "每月 3 日 09:00 CST",
+    content: "FINRA 融资余额、TIC 跨境资金",
+    triggerModel: false,
+    color: "text-amber-400 border-amber-500/30",
+    dotColor: "bg-amber-400",
+  },
+  {
+    batch: "Quarterly",
+    schedule: "季中 15 日 09:00 CST",
+    content: "盈利指标（EPS/Revenue/Margin）",
+    triggerModel: false,
+    color: "text-blue-400 border-blue-500/30",
+    dotColor: "bg-blue-400",
+  },
+  {
+    batch: "Event",
+    schedule: "手动触发",
+    content: "FOMC 等事件",
+    triggerModel: true,
+    color: "text-red-400 border-red-500/30",
+    dotColor: "bg-red-400",
+  },
+];
 
 export default function IndicatorsPage() {
   const [indicators, setIndicators] = useState<IndicatorRecord[]>([]);
@@ -120,6 +164,47 @@ export default function IndicatorsPage() {
           </div>
           <p className="text-zinc-500 text-sm ml-12">
             指标字典 — 共 {indicators.length} 个指标（{indicators.filter(i => i.is_active).length} 已接入 / {indicators.filter(i => !i.is_active).length} 待接入）
+          </p>
+        </div>
+
+        {/* 数据更新时间表 */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">
+              Data Update Schedule
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {UPDATE_SCHEDULE.map((item) => (
+              <div
+                key={item.batch}
+                className={cn(
+                  "flex-1 min-w-0 rounded-[12px] border bg-[var(--bg-card)] px-3 py-3 transition-colors duration-150 hover:bg-[var(--bg-card-hover)]",
+                  item.color
+                )}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className={cn("w-1.5 h-1.5 rounded-full", item.dotColor)} />
+                  <span className={cn("text-xs font-semibold", item.color.split(" ")[0])}>
+                    {item.batch}
+                  </span>
+                  {item.triggerModel && (
+                    <Zap className="w-3 h-3 text-amber-400 ml-auto" />
+                  )}
+                </div>
+                <p className="text-[11px] text-zinc-300 font-medium mb-0.5">
+                  {item.schedule}
+                </p>
+                <p className="text-[11px] text-zinc-500 leading-snug">
+                  {item.content}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-zinc-600 flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span className="text-amber-400/60">= 数据更新后自动触发模型运行</span>
           </p>
         </div>
 
