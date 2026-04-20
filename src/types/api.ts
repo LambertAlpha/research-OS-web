@@ -277,9 +277,14 @@ export interface SectorBias {
   rationale?: string;
 }
 
+/**
+ * 风险管理输出。
+ * 注意：后端返回的字段名是 `spx_drawdown_pct` 和 `label`，
+ * 由 lib/api.ts 的 adapter 映射为此处的 `drawdown_pct` 和 `level`。
+ */
 export interface RiskManagement {
-  drawdown_pct: number;
-  level: string;
+  drawdown_pct: number; // 来自后端 spx_drawdown_pct
+  level: string;        // 来自后端 label
   action: string;
 }
 
