@@ -255,6 +255,10 @@ export default function ChartsPage() {
     setSearchOpen(true);
   }, []);
 
+  // 用 useCallback 包裹 onClose 让 IndicatorSearchModal 内部的 keyboard listener
+  // 不会因为 page render 导致 deps 变化而反复 unmount/remount
+  const closeSearchModal = useCallback(() => setSearchOpen(false), []);
+
   const onSelectIndicator = useCallback(
     (symbol: string) => {
       if (!searchTargetPaneId) return;
@@ -445,7 +449,7 @@ export default function ChartsPage() {
           isOpen={searchOpen}
           excludeSymbols={targetPane?.symbols ?? []}
           paneTitle={targetPane?.title}
-          onClose={() => setSearchOpen(false)}
+          onClose={closeSearchModal}
           onSelect={onSelectIndicator}
         />
       </div>

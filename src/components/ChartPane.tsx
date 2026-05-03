@@ -117,18 +117,21 @@ function severityColor(severity: ChartEvent["severity"]): string {
 }
 
 function eventsToMarkers(events: ChartEvent[]): SeriesMarker<Time>[] {
-  return events.map((e) => ({
-    time: e.ts.slice(0, 10) as Time,
-    position: e.severity === "critical" ? "aboveBar" : "belowBar",
-    color: severityColor(e.severity),
-    shape:
-      e.severity === "critical"
-        ? "arrowDown"
-        : e.severity === "warning"
-          ? "circle"
-          : "circle",
-    size: e.severity === "critical" ? 1.5 : 0.8,
-  }));
+  // 防御：events 来自 API，ts 字段理论上是 ISO 字符串但实际可能为 null/undefined/数字
+  return events
+    .filter((e) => typeof e?.ts === "string" && e.ts.length >= 10)
+    .map((e) => ({
+      time: e.ts.slice(0, 10) as Time,
+      position: e.severity === "critical" ? "aboveBar" : "belowBar",
+      color: severityColor(e.severity),
+      shape:
+        e.severity === "critical"
+          ? "arrowDown"
+          : e.severity === "warning"
+            ? "circle"
+            : "circle",
+      size: e.severity === "critical" ? 1.5 : 0.8,
+    }));
 }
 
 function timeToYmd(t: Time | undefined): string | null {
@@ -239,7 +242,9 @@ export function ChartPane({
         tip.style.display = "none";
         return;
       }
-      const matching = evs.filter((e) => e.ts.slice(0, 10) === ymd);
+      const matching = evs.filter(
+        (e) => typeof e?.ts === "string" && e.ts.slice(0, 10) === ymd,
+      );
       if (matching.length === 0) {
         tip.style.display = "none";
         return;

@@ -173,11 +173,25 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
     // 事件类型解析：et > e（兼容 M4 boolean / 老 array）
     let enabledEventTypes: string[];
     if (Array.isArray(compact.et)) {
-      enabledEventTypes = compact.et;
+      enabledEventTypes = compact.et.filter(
+        (x): x is string => typeof x === "string",
+      );
     } else if (Array.isArray(compact.e)) {
-      enabledEventTypes = compact.e;
+      enabledEventTypes = (compact.e as unknown[]).filter(
+        (x): x is string => typeof x === "string",
+      );
     } else if (compact.e === false) {
       enabledEventTypes = [];
+    } else if (typeof compact.e === "string") {
+      // 防御：旧 URL 中 `e` 意外是字符串，尝试 JSON.parse 否则降级到默认
+      try {
+        const parsed = JSON.parse(compact.e);
+        enabledEventTypes = Array.isArray(parsed)
+          ? parsed.filter((x: unknown): x is string => typeof x === "string")
+          : [...DEFAULT_ENABLED_EVENT_TYPES];
+      } catch {
+        enabledEventTypes = [...DEFAULT_ENABLED_EVENT_TYPES];
+      }
     } else {
       // M4 e=true 或缺失 → 默认 5 类
       enabledEventTypes = [...DEFAULT_ENABLED_EVENT_TYPES];
