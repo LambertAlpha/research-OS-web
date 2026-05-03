@@ -25,6 +25,31 @@ interface EditablePaneProps {
   onRemoveSeries: (symbol: string) => void;
   onAddIndicator: () => void;
   onDeletePane: () => void;
+  onSetAxisOverride?: (
+    symbol: string,
+    axis: "left" | "right" | null,
+  ) => void;
+}
+
+// chip 上的轴状态循环：null (Auto) → left → right → null
+function nextAxisState(
+  current: "left" | "right" | undefined,
+): "left" | "right" | null {
+  if (current === undefined) return "left";
+  if (current === "left") return "right";
+  return null; // 从 right → 回到 Auto
+}
+
+function axisLabel(current: "left" | "right" | undefined): string {
+  if (current === "left") return "L";
+  if (current === "right") return "R";
+  return "Auto";
+}
+
+function axisColor(current: "left" | "right" | undefined): string {
+  if (current === "left") return "var(--status-green)";
+  if (current === "right") return "#3b82f6";
+  return "var(--text-faint)";
 }
 
 export function EditablePane({
@@ -35,7 +60,10 @@ export function EditablePane({
   onRemoveSeries,
   onAddIndicator,
   onDeletePane,
+  onSetAxisOverride,
 }: EditablePaneProps) {
+  // axis toggle 仅对多 series 且存在数据的 pane 有意义
+  const showAxisToggle = series.length >= 2 && onSetAxisOverride !== undefined;
   const totalSymbols = pane.symbols.length;
 
   return (
@@ -69,6 +97,7 @@ export function EditablePane({
           {pane.symbols.map((sym, idx) => {
             const s = series.find((x) => x.symbol === sym);
             const isMissing = missingSymbols.includes(sym);
+            const axisState = pane.axisOverrides?.[sym];
             return (
               <span
                 key={sym}
@@ -104,6 +133,22 @@ export function EditablePane({
                 {isMissing && (
                   <span className="text-[var(--text-faint)]">missing</span>
                 )}
+                {showAxisToggle && !isMissing && (
+                  <button
+                    onClick={() =>
+                      onSetAxisOverride?.(sym, nextAxisState(axisState))
+                    }
+                    className="rounded px-1 font-mono text-[9px] uppercase transition-colors hover:bg-[var(--bg-card-hover)]"
+                    style={{ color: axisColor(axisState) }}
+                    title={
+                      axisState
+                        ? `Y 轴：${axisState === "left" ? "左" : "右"}（手动）— 点击循环切换`
+                        : "Y 轴：自动 — 点击切到左轴"
+                    }
+                  >
+                    {axisLabel(axisState)}
+                  </button>
+                )}
                 <button
                   onClick={() => onRemoveSeries(sym)}
                   className="text-[var(--text-faint)] transition-colors hover:text-[var(--status-red)]"
@@ -119,7 +164,12 @@ export function EditablePane({
 
       {/* chart canvas */}
       {series.length > 0 ? (
-        <ChartPane series={series} events={events} height={300} />
+        <ChartPane
+          series={series}
+          events={events}
+          axisOverrides={pane.axisOverrides}
+          height={300}
+        />
       ) : (
         <div className="rounded-[10px] border border-dashed border-[var(--border-subtle)] bg-[var(--bg-inset)] py-12 text-center text-sm text-[var(--text-muted)]">
           {totalSymbols === 0

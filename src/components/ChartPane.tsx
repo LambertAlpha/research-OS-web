@@ -1,16 +1,19 @@
 /**
- * [INPUT]: { series, height?, events? } — 系列数组、可选事件标记、高度
- * [OUTPUT]: 一个 lightweight-charts pane（多 series 叠加 + 自动双 y 轴 + 十字线 +
- *           可选 event markers + 主题对齐 Clinical Dark）
+ * [INPUT]: { series, events?, axisOverrides?, height? } — 系列、可选事件、可选轴覆盖、高度
+ * [OUTPUT]: 一个 lightweight-charts pane（多 series 叠加 + 双 y 轴 [可手动覆盖] + 十字线 +
+ *           可选 event markers + hover tooltip + 主题对齐 Clinical Dark）
  * [POS]: 位于 /components，被 EditablePane 引用。Charts Workspace 的最小可视化单元。
  *
  * [PROTOCOL]:
- * 1. 仅渲染传入的 series 与 events，不发起 API 请求（pure presentational）。
+ * 1. 仅渲染传入的 series / events / axisOverrides，不发起 API 请求（pure presentational）。
  * 2. ResizeObserver 处理父容器宽度变化，chart instance 在 unmount 时正确释放。
- * 3. lightweight-charts v5：用 chart.addSeries(LineSeries, {...}) + priceScaleId 区分轴。
- * 4. 双 y 轴策略：按 series 数据中位数的 log10 量级聚类，最大间隔 > 1.5 个数量级时
- *    自动分到 left/right 两轴；否则全部 right 单轴。
- * 5. events markers：用 v5 的 createSeriesMarkers plugin attach 到第一个 series。
+ * 3. lightweight-charts v5：addSeries(LineSeries, {priceScaleId}) 区分 left/right 轴。
+ * 4. 双 y 轴策略：
+ *    - 用户在 axisOverrides 显式指定的 series → 直接走指定轴（手动 > 自动）
+ *    - 剩下未指定的 series → 按 log10 量级聚类自动分轴（gap >= 1.0 触发分轴）
+ * 5. events markers：用 v5 createSeriesMarkers plugin attach 到第一个 series。
+ * 6. hover tooltip：subscribeCrosshairMove 监听十字线移动，在该日期附近的 events
+ *    渲染成 absolute 定位的 DOM tooltip（marker 没有 text 时弥补可读性）。
  */
 "use client";
 
@@ -22,6 +25,7 @@ import {
   type IChartApi,
   type ISeriesApi,
   type ISeriesMarkersPluginApi,
+  type MouseEventParams,
   type SeriesMarker,
   type Time,
 } from "lightweight-charts";
@@ -34,19 +38,37 @@ import {
 interface ChartPaneProps {
   series: ChartSeries[];
   events?: ChartEvent[];
+  axisOverrides?: Record<string, "left" | "right">;
   height?: number;
 }
 
 // 把 series 按数据量级聚类成 left/right 两组
-// 返回 Map<symbol, "left" | "right">
-function clusterAxes(series: ChartSeries[]): Map<string, "left" | "right"> {
+// 已在 axisOverrides 中明确指定的 symbol 优先走 override；剩余 symbol 走自动聚类
+function clusterAxes(
+  series: ChartSeries[],
+  overrides: Record<string, "left" | "right"> = {},
+): Map<string, "left" | "right"> {
   const result = new Map<string, "left" | "right">();
-  if (series.length <= 1) {
-    series.forEach((s) => result.set(s.symbol, "right"));
+
+  // Step 1: apply overrides
+  const remaining: ChartSeries[] = [];
+  for (const s of series) {
+    const ov = overrides[s.symbol];
+    if (ov === "left" || ov === "right") {
+      result.set(s.symbol, ov);
+    } else {
+      remaining.push(s);
+    }
+  }
+
+  if (remaining.length === 0) return result;
+  if (remaining.length === 1) {
+    result.set(remaining[0]!.symbol, "right");
     return result;
   }
 
-  const items = series.map((s) => {
+  // Step 2: 自动聚类 remaining
+  const items = remaining.map((s) => {
     const values = s.points
       .map((p) => p.value)
       .filter(
@@ -70,13 +92,12 @@ function clusterAxes(series: ChartSeries[]): Map<string, "left" | "right"> {
     }
   }
 
-  // 数量级差 < 1.0（10x）→ 单轴；>= 1.0 自动分到 left/right
+  // 数量级差 < 1.0（10x）→ 单轴
   if (maxGap < 1.0 || splitIdx < 0) {
-    series.forEach((s) => result.set(s.symbol, "right"));
+    remaining.forEach((s) => result.set(s.symbol, "right"));
     return result;
   }
 
-  // splitIdx 之前（小量级）走 left；splitIdx 及之后（大量级）走 right
   sorted.forEach((item, i) => {
     result.set(item.symbol, i < splitIdx ? "left" : "right");
   });
@@ -95,30 +116,93 @@ function severityColor(severity: ChartEvent["severity"]): string {
   }
 }
 
-function eventsToMarkers(
-  events: ChartEvent[],
-): SeriesMarker<Time>[] {
-  // 不渲染 text 标签——markers 密集时文字会重叠成噪音；hover 时由
-  // lightweight-charts 默认 tooltip 提示（包含 time + 颜色，足够定位）
-  return events.map((e) => ({
-    time: e.ts.slice(0, 10) as Time,
-    position: e.severity === "critical" ? "aboveBar" : "belowBar",
-    color: severityColor(e.severity),
-    shape:
-      e.severity === "critical"
-        ? "arrowDown"
-        : e.severity === "warning"
-          ? "circle"
-          : "circle",
-    size: e.severity === "critical" ? 1.5 : 0.8,
-  }));
+function eventsToMarkers(events: ChartEvent[]): SeriesMarker<Time>[] {
+  // 防御：events 来自 API，ts 字段理论上是 ISO 字符串但实际可能为 null/undefined/数字
+  return events
+    .filter((e) => typeof e?.ts === "string" && e.ts.length >= 10)
+    .map((e) => ({
+      time: e.ts.slice(0, 10) as Time,
+      position: e.severity === "critical" ? "aboveBar" : "belowBar",
+      color: severityColor(e.severity),
+      shape:
+        e.severity === "critical"
+          ? "arrowDown"
+          : e.severity === "warning"
+            ? "circle"
+            : "circle",
+      size: e.severity === "critical" ? 1.5 : 0.8,
+    }));
 }
 
-export function ChartPane({ series, events, height = 300 }: ChartPaneProps) {
+function timeToYmd(t: Time | undefined): string | null {
+  if (!t) return null;
+  if (typeof t === "string") return t.slice(0, 10);
+  // BusinessDay
+  if (typeof t === "object" && "year" in t && "month" in t && "day" in t) {
+    const m = String(t.month).padStart(2, "0");
+    const d = String(t.day).padStart(2, "0");
+    return `${t.year}-${m}-${d}`;
+  }
+  // UTCTimestamp (number, seconds)
+  if (typeof t === "number") {
+    return new Date(t * 1000).toISOString().slice(0, 10);
+  }
+  return null;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildTooltipHtml(date: string, events: ChartEvent[]): string {
+  const rows = events
+    .slice(0, 6) // 最多显示 6 条避免溢出
+    .map((e) => {
+      const color = severityColor(e.severity);
+      const arrow =
+        e.from_state && e.to_state
+          ? `<span style="color:#63636e">${escapeHtml(e.from_state)} → ${escapeHtml(e.to_state)}</span>`
+          : "";
+      return `
+        <div style="display:flex;align-items:flex-start;gap:6px;padding:2px 0;">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${color};margin-top:5px;flex-shrink:0;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;color:#e4e4e7;line-height:1.3;">${escapeHtml(e.label)}</div>
+            ${arrow ? `<div style="font-size:10px;line-height:1.3;">${arrow}</div>` : ""}
+            <div style="font-size:9px;color:#63636e;text-transform:uppercase;letter-spacing:0.5px;">
+              ${escapeHtml(e.model)} · ${escapeHtml(e.type)}
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+  const more =
+    events.length > 6
+      ? `<div style="font-size:10px;color:#63636e;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;">+${events.length - 6} more</div>`
+      : "";
+  return `
+    <div style="font-size:10px;color:#a1a1aa;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">${escapeHtml(date)}</div>
+    ${rows}${more}
+  `;
+}
+
+export function ChartPane({
+  series,
+  events,
+  axisOverrides,
+  height = 300,
+}: ChartPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRefs = useRef<ISeriesApi<"Line">[]>([]);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const eventsRef = useRef<ChartEvent[]>([]);
 
   // 1. 创建 chart 实例（一次）
   useEffect(() => {
@@ -131,6 +215,56 @@ export function ChartPane({ series, events, height = 300 }: ChartPaneProps) {
     });
     chartRef.current = chart;
 
+    // 创建 hover tooltip 容器（绝对定位在 chart container 内）
+    const tooltip = document.createElement("div");
+    tooltip.style.cssText =
+      "position:absolute;display:none;z-index:20;pointer-events:none;background:#19191c;border:1px solid rgba(255,255,255,0.09);border-radius:8px;padding:8px 10px;min-width:180px;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.4);";
+    containerRef.current.style.position = "relative";
+    containerRef.current.appendChild(tooltip);
+    tooltipRef.current = tooltip;
+
+    const handleCrosshair = (param: MouseEventParams) => {
+      const tip = tooltipRef.current;
+      const evs = eventsRef.current;
+      if (!tip) return;
+      if (
+        !param.point ||
+        !param.time ||
+        param.point.x < 0 ||
+        param.point.y < 0 ||
+        evs.length === 0
+      ) {
+        tip.style.display = "none";
+        return;
+      }
+      const ymd = timeToYmd(param.time);
+      if (!ymd) {
+        tip.style.display = "none";
+        return;
+      }
+      const matching = evs.filter(
+        (e) => typeof e?.ts === "string" && e.ts.slice(0, 10) === ymd,
+      );
+      if (matching.length === 0) {
+        tip.style.display = "none";
+        return;
+      }
+      tip.innerHTML = buildTooltipHtml(ymd, matching);
+      // 智能定位：避免溢出右边/下边
+      const containerW = containerRef.current?.clientWidth ?? 0;
+      const containerH = containerRef.current?.clientHeight ?? 0;
+      const tipW = tip.offsetWidth || 200;
+      const tipH = tip.offsetHeight || 100;
+      let left = param.point.x + 16;
+      let top = param.point.y + 12;
+      if (left + tipW > containerW) left = param.point.x - tipW - 12;
+      if (top + tipH > containerH) top = param.point.y - tipH - 8;
+      tip.style.left = `${Math.max(0, left)}px`;
+      tip.style.top = `${Math.max(0, top)}px`;
+      tip.style.display = "block";
+    };
+    chart.subscribeCrosshairMove(handleCrosshair);
+
     const resizeObserver = new ResizeObserver(() => {
       if (containerRef.current && chartRef.current) {
         chartRef.current.applyOptions({
@@ -141,11 +275,14 @@ export function ChartPane({ series, events, height = 300 }: ChartPaneProps) {
     resizeObserver.observe(containerRef.current);
 
     return () => {
+      chart.unsubscribeCrosshairMove(handleCrosshair);
       resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRefs.current = [];
       markersPluginRef.current = null;
+      tooltip.remove();
+      tooltipRef.current = null;
     };
   }, [height]);
 
@@ -165,8 +302,8 @@ export function ChartPane({ series, events, height = 300 }: ChartPaneProps) {
     seriesRefs.current = [];
     markersPluginRef.current = null;
 
-    // 双 y 轴聚类
-    const axisMap = clusterAxes(series);
+    // 双 y 轴聚类（含 overrides）
+    const axisMap = clusterAxes(series, axisOverrides ?? {});
     const usedLeft = Array.from(axisMap.values()).some((v) => v === "left");
     chart.applyOptions({
       leftPriceScale: { visible: usedLeft },
@@ -188,7 +325,6 @@ export function ChartPane({ series, events, height = 300 }: ChartPaneProps) {
         }))
         .sort((a, b) => a.time.localeCompare(b.time));
 
-      // 去重：同 time 取最后一个值
       const dedup: typeof data = [];
       for (const point of data) {
         const last = dedup.length > 0 ? dedup[dedup.length - 1] : undefined;
@@ -206,10 +342,11 @@ export function ChartPane({ series, events, height = 300 }: ChartPaneProps) {
     if (series.length > 0) {
       chart.timeScale().fitContent();
     }
-  }, [series]);
+  }, [series, axisOverrides]);
 
-  // 3. events markers
+  // 3. events markers + 同步给 hover tooltip 用的 ref
   useEffect(() => {
+    eventsRef.current = events ?? [];
     const chart = chartRef.current;
     const firstSeries = seriesRefs.current[0];
     if (!chart || !firstSeries) return;

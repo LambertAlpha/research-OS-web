@@ -1,6 +1,6 @@
 /**
  * [INPUT]: ?w=base64 query param（可选，恢复 workspace state；缺省走 DEFAULT_WORKSPACE）
- * [OUTPUT]: /charts 路由 — Charts Workspace M5：M4 能力 + 事件类型多选 (EventsSelector) + axisOverrides 字段就位
+ * [OUTPUT]: /charts 路由 — Charts Workspace M6：M5 能力 + 双 y 轴手动覆盖（chip 上 axis toggle）+ markers hover tooltip
  * [POS]: 位于 /app/charts，与 dashboard 页面平级。定位「自由探索指标」工作台
  *        （vs dashboard 的「看模型说什么」、未来 /explain/* 的「看模型为什么这么判」）。
  *
@@ -213,18 +213,51 @@ export default function ChartsPage() {
   const removeSeries = useCallback((paneId: string, symbol: string) => {
     setState((s) => ({
       ...s,
-      panes: s.panes.map((p) =>
-        p.id === paneId
-          ? { ...p, symbols: p.symbols.filter((x) => x !== symbol) }
-          : p,
-      ),
+      panes: s.panes.map((p) => {
+        if (p.id !== paneId) return p;
+        // 同时清理 axisOverrides 中该 symbol 的条目
+        const nextOverrides = { ...(p.axisOverrides ?? {}) };
+        delete nextOverrides[symbol];
+        return {
+          ...p,
+          symbols: p.symbols.filter((x) => x !== symbol),
+          axisOverrides:
+            Object.keys(nextOverrides).length > 0 ? nextOverrides : undefined,
+        };
+      }),
     }));
   }, []);
+
+  const setAxisOverride = useCallback(
+    (paneId: string, symbol: string, axis: "left" | "right" | null) => {
+      setState((s) => ({
+        ...s,
+        panes: s.panes.map((p) => {
+          if (p.id !== paneId) return p;
+          const next = { ...(p.axisOverrides ?? {}) };
+          if (axis === null) {
+            delete next[symbol];
+          } else {
+            next[symbol] = axis;
+          }
+          return {
+            ...p,
+            axisOverrides: Object.keys(next).length > 0 ? next : undefined,
+          };
+        }),
+      }));
+    },
+    [],
+  );
 
   const openSearchFor = useCallback((paneId: string) => {
     setSearchTargetPaneId(paneId);
     setSearchOpen(true);
   }, []);
+
+  // 用 useCallback 包裹 onClose 让 IndicatorSearchModal 内部的 keyboard listener
+  // 不会因为 page render 导致 deps 变化而反复 unmount/remount
+  const closeSearchModal = useCallback(() => setSearchOpen(false), []);
 
   const onSelectIndicator = useCallback(
     (symbol: string) => {
@@ -280,7 +313,7 @@ export default function ChartsPage() {
               Charts Workspace
             </h1>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
-              M5
+              M6
             </span>
             {state.asOf && (
               <span
@@ -341,6 +374,9 @@ export default function ChartsPage() {
               onRemoveSeries={(sym) => removeSeries(pane.id, sym)}
               onAddIndicator={() => openSearchFor(pane.id)}
               onDeletePane={() => deletePane(pane.id)}
+              onSetAxisOverride={(sym, axis) =>
+                setAxisOverride(pane.id, sym, axis)
+              }
             />
           ))}
 
@@ -413,7 +449,7 @@ export default function ChartsPage() {
           isOpen={searchOpen}
           excludeSymbols={targetPane?.symbols ?? []}
           paneTitle={targetPane?.title}
-          onClose={() => setSearchOpen(false)}
+          onClose={closeSearchModal}
           onSelect={onSelectIndicator}
         />
       </div>
