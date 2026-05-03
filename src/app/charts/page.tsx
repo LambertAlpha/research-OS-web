@@ -1,6 +1,6 @@
 /**
  * [INPUT]: ?w=base64 query param（可选，恢复 workspace state；缺省走 DEFAULT_WORKSPACE）
- * [OUTPUT]: /charts 路由 — Charts Workspace M4：M3 全部能力 + 双 y 轴 + 事件 markers + as_of 回放
+ * [OUTPUT]: /charts 路由 — Charts Workspace M5：M4 能力 + 事件类型多选 (EventsSelector) + axisOverrides 字段就位
  * [POS]: 位于 /app/charts，与 dashboard 页面平级。定位「自由探索指标」工作台
  *        （vs dashboard 的「看模型说什么」、未来 /explain/* 的「看模型为什么这么判」）。
  *
@@ -27,6 +27,7 @@ import type {
   ChartSeriesResponse,
 } from "@/types/api";
 import {
+  DEFAULT_ENABLED_EVENT_TYPES,
   DEFAULT_WORKSPACE,
   decodeWorkspace,
   encodeWorkspace,
@@ -139,11 +140,10 @@ export default function ChartsPage() {
     };
   }, [allSymbols, state.range, state.transform, state.asOf]);
 
-  // events (re-fetch on range / asOf / showEvents change)
-  // 默认只拉「关键状态转换」类型，避免 rule_triggered (1800+) / alert (100+) 噪音
-  // 把图表淹没。需要这些噪音事件时可以扩展 SIGNIFICANT_EVENT_TYPES。
+  // events (re-fetch on range / asOf / enabledEventTypes change)
+  // M5：用户在 EventsSelector 选什么类型就拉什么类型；空选 = 不拉。
   useEffect(() => {
-    if (!state.showEvents) {
+    if (state.enabledEventTypes.length === 0) {
       setEventsData({ events: [] });
       return;
     }
@@ -158,13 +158,7 @@ export default function ChartsPage() {
       .getChartEvents({
         start,
         end,
-        types: [
-          "risk_light_change",
-          "hard_stop",
-          "macro_state_change",
-          "equity_regime_change",
-          "btc_pattern_triggered",
-        ],
+        types: state.enabledEventTypes,
       })
       .then((d) => {
         if (!cancelled) setEventsData(d);
@@ -175,13 +169,13 @@ export default function ChartsPage() {
     return () => {
       cancelled = true;
     };
-  }, [state.showEvents, state.range, state.asOf]);
+  }, [state.enabledEventTypes, state.range, state.asOf]);
 
   // ============== handlers ==============
 
   const loadPreset = useCallback((preset: ChartPreset) => {
     setState((prev) =>
-      presetToWorkspace(preset, prev.range, prev.asOf, prev.showEvents),
+      presetToWorkspace(preset, prev.range, prev.asOf, prev.enabledEventTypes),
     );
   }, []);
 
@@ -200,8 +194,8 @@ export default function ChartsPage() {
     [],
   );
 
-  const toggleEvents = useCallback(
-    () => setState((s) => ({ ...s, showEvents: !s.showEvents })),
+  const setEnabledEventTypes = useCallback(
+    (next: string[]) => setState((s) => ({ ...s, enabledEventTypes: next })),
     [],
   );
 
@@ -274,7 +268,8 @@ export default function ChartsPage() {
   }, [state.panes, seriesData]);
 
   const targetPane = state.panes.find((p) => p.id === searchTargetPaneId);
-  const eventsForOverlay = state.showEvents ? eventsData?.events ?? [] : [];
+  const eventsForOverlay =
+    state.enabledEventTypes.length > 0 ? eventsData?.events ?? [] : [];
 
   return (
     <div className="min-h-screen bg-[var(--bg)] py-6 px-6 lg:px-8">
@@ -285,7 +280,7 @@ export default function ChartsPage() {
               Charts Workspace
             </h1>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
-              M4
+              M5
             </span>
             {state.asOf && (
               <span
@@ -308,12 +303,14 @@ export default function ChartsPage() {
             range={state.range}
             transform={state.transform}
             asOf={state.asOf}
-            showEvents={state.showEvents}
+            eventTypes={catalog.event_types}
+            enabledEventTypes={state.enabledEventTypes}
+            defaultEventTypes={DEFAULT_ENABLED_EVENT_TYPES}
             onLoadPreset={loadPreset}
             onRangeChange={setRange}
             onTransformChange={setTransform}
             onAsOfChange={setAsOf}
-            onToggleEvents={toggleEvents}
+            onEventTypesChange={setEnabledEventTypes}
             onAddPane={addPane}
             onReset={reset}
             onCopyUrl={copyUrl}
@@ -355,7 +352,9 @@ export default function ChartsPage() {
         </div>
 
         {/* events 摘要：当前区间事件总数 + 各类型分布 */}
-        {state.showEvents && eventsData && eventsData.events.length > 0 && (
+        {state.enabledEventTypes.length > 0 &&
+          eventsData &&
+          eventsData.events.length > 0 && (
           <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3 text-xs">
             <div className="mb-2 flex items-center gap-2 text-[var(--text-secondary)]">
               <span className="font-medium">当前区间事件标记</span>
