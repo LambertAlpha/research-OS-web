@@ -13,13 +13,14 @@
 
 import { X, Plus, Trash2 } from "lucide-react";
 import { ChartPane } from "./ChartPane";
-import type { ChartSeries } from "@/types/api";
+import type { ChartEvent, ChartSeries } from "@/types/api";
 import type { WorkspacePane } from "@/lib/workspace-state";
 import { getSeriesColor } from "@/lib/chart-theme";
 
 interface EditablePaneProps {
   pane: WorkspacePane;
   series: ChartSeries[];
+  events?: ChartEvent[];
   missingSymbols: string[];
   onRemoveSeries: (symbol: string) => void;
   onAddIndicator: () => void;
@@ -29,6 +30,7 @@ interface EditablePaneProps {
 export function EditablePane({
   pane,
   series,
+  events,
   missingSymbols,
   onRemoveSeries,
   onAddIndicator,
@@ -117,7 +119,7 @@ export function EditablePane({
 
       {/* chart canvas */}
       {series.length > 0 ? (
-        <ChartPane series={series} height={300} />
+        <ChartPane series={series} events={events} height={300} />
       ) : (
         <div className="rounded-[10px] border border-dashed border-[var(--border-subtle)] bg-[var(--bg-inset)] py-12 text-center text-sm text-[var(--text-muted)]">
           {totalSymbols === 0

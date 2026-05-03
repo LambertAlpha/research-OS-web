@@ -34,6 +34,11 @@ export const CLINICAL_DARK_CHART_OPTIONS: DeepPartial<ChartOptions> = {
     borderColor: "rgba(255, 255, 255, 0.06)",
     textColor: "#63636e",
   },
+  leftPriceScale: {
+    borderColor: "rgba(255, 255, 255, 0.06)",
+    textColor: "#63636e",
+    visible: false, // 默认隐藏；ChartPane 在 series 量级差大时显式开启
+  },
   timeScale: {
     borderColor: "rgba(255, 255, 255, 0.06)",
     timeVisible: false,

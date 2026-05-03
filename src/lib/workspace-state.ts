@@ -37,6 +37,8 @@ export interface WorkspaceState {
   panes: WorkspacePane[];
   range: TimeRangePreset;
   transform: ChartTransform;
+  asOf: string | null; // YYYY-MM-DD or null（最新 vintage）
+  showEvents: boolean;  // 是否在每个 pane 上叠加事件 markers
 }
 
 let _idCounter = 0;
@@ -59,6 +61,8 @@ export const DEFAULT_WORKSPACE: WorkspaceState = {
   ],
   range: "1Y",
   transform: "none",
+  asOf: null,
+  showEvents: true,
 };
 
 export function rangeToDays(range: TimeRangePreset): number {
@@ -93,11 +97,15 @@ export function rangeFromDays(days: number): TimeRangePreset {
 export function presetToWorkspace(
   preset: ChartPreset,
   carryRange?: TimeRangePreset,
+  carryAsOf: string | null = null,
+  carryShowEvents: boolean = true,
 ): WorkspaceState {
   return {
     panes: preset.panes.map((p) => newPane(p.title, [...p.indicators])),
     range: carryRange ?? rangeFromDays(preset.default_range_days),
     transform: "none",
+    asOf: carryAsOf,
+    showEvents: carryShowEvents,
   };
 }
 
@@ -109,6 +117,8 @@ interface CompactState {
   p: { t: string; s: string[] }[];
   r: TimeRangePreset;
   x: ChartTransform;
+  a?: string | null;
+  e?: boolean;
 }
 
 function utf8ToBase64(s: string): string {
@@ -126,6 +136,8 @@ export function encodeWorkspace(state: WorkspaceState): string {
     p: state.panes.map((p) => ({ t: p.title, s: p.symbols })),
     r: state.range,
     x: state.transform,
+    a: state.asOf,
+    e: state.showEvents,
   };
   return utf8ToBase64(JSON.stringify(compact));
 }
@@ -141,6 +153,8 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
       ),
       range: compact.r ?? "1Y",
       transform: compact.x ?? "none",
+      asOf: compact.a ?? null,
+      showEvents: compact.e ?? true,
     };
   } catch {
     return null;
