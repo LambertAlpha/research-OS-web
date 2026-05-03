@@ -1,15 +1,17 @@
 /**
  * [INPUT]: ?w=base64 query param（可选，恢复 workspace state；缺省走 DEFAULT_WORKSPACE）
- * [OUTPUT]: /charts 路由 — Charts Workspace M3：自由组合 + URL 序列化 + 时间区间切换 + Transform
+ * [OUTPUT]: /charts 路由 — Charts Workspace M4：M3 全部能力 + 双 y 轴 + 事件 markers + as_of 回放
  * [POS]: 位于 /app/charts，与 dashboard 页面平级。定位「自由探索指标」工作台
  *        （vs dashboard 的「看模型说什么」、未来 /explain/* 的「看模型为什么这么判」）。
  *
  * [PROTOCOL]:
- * 1. workspace state 持久化到 URL（replaceState，不污染 history）；任何 state 变化即同步。
+ * 1. workspace state（panes / range / transform / asOf / showEvents）持久化到 URL，
+ *    任何 state 变化即同步；replaceState 不污染 history。
  * 2. catalog 一次拉取（presets + indicators + event_types），session 内复用。
- * 3. series 在 symbols / range / transform 任一变化时重拉；空 symbol 集跳过 fetch。
- * 4. M3 范围：preset 加载 + 自由 pane CRUD + indicator 搜索添加 + 区间/Transform 切换 + URL 分享。
- *    暂不支持：as_of vintage 回放、event overlay 渲染、双 y 轴、绘图工具。
+ * 3. series 在 symbols / range / transform / asOf 任一变化时重拉。
+ * 4. events 在 range / asOf / showEvents 变化时重拉（showEvents=false 时不拉）。
+ * 5. M4 范围（本版本）：preset / 自由 pane CRUD / indicator 搜索 / 区间 / Transform /
+ *    URL 分享 / **双 y 轴自动分轴 / 事件 markers overlay / as_of vintage 回放**。
  */
 "use client";
 
@@ -20,6 +22,7 @@ import { EditablePane } from "@/components/EditablePane";
 import { IndicatorSearchModal } from "@/components/IndicatorSearchModal";
 import type {
   ChartCatalogResponse,
+  ChartEventsResponse,
   ChartPreset,
   ChartSeriesResponse,
 } from "@/types/api";
@@ -52,6 +55,9 @@ function loadInitialState(): WorkspaceState {
 export default function ChartsPage() {
   const [catalog, setCatalog] = useState<ChartCatalogResponse | null>(null);
   const [seriesData, setSeriesData] = useState<ChartSeriesResponse | null>(
+    null,
+  );
+  const [eventsData, setEventsData] = useState<ChartEventsResponse | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +96,7 @@ export default function ChartsPage() {
     };
   }, []);
 
-  // series (re-fetch on symbols / range / transform change)
+  // series (re-fetch on symbols / range / transform / asOf change)
   const allSymbols = useMemo(
     () => Array.from(new Set(state.panes.flatMap((p) => p.symbols))),
     [state.panes],
@@ -102,8 +108,8 @@ export default function ChartsPage() {
       return;
     }
 
-    const end = isoDate(new Date());
-    const startDate = new Date();
+    const end = state.asOf ?? isoDate(new Date());
+    const startDate = new Date(end);
     startDate.setDate(startDate.getDate() - rangeToDays(state.range));
     const start = isoDate(startDate);
 
@@ -115,6 +121,7 @@ export default function ChartsPage() {
         symbols: allSymbols,
         start,
         end,
+        asOf: state.asOf ?? undefined,
         transform: state.transform,
       })
       .then((d) => {
@@ -130,12 +137,52 @@ export default function ChartsPage() {
     return () => {
       cancelled = true;
     };
-  }, [allSymbols, state.range, state.transform]);
+  }, [allSymbols, state.range, state.transform, state.asOf]);
+
+  // events (re-fetch on range / asOf / showEvents change)
+  // 默认只拉「关键状态转换」类型，避免 rule_triggered (1800+) / alert (100+) 噪音
+  // 把图表淹没。需要这些噪音事件时可以扩展 SIGNIFICANT_EVENT_TYPES。
+  useEffect(() => {
+    if (!state.showEvents) {
+      setEventsData({ events: [] });
+      return;
+    }
+
+    const end = state.asOf ?? isoDate(new Date());
+    const startDate = new Date(end);
+    startDate.setDate(startDate.getDate() - rangeToDays(state.range));
+    const start = isoDate(startDate);
+
+    let cancelled = false;
+    apiClient
+      .getChartEvents({
+        start,
+        end,
+        types: [
+          "risk_light_change",
+          "hard_stop",
+          "macro_state_change",
+          "equity_regime_change",
+          "btc_pattern_triggered",
+        ],
+      })
+      .then((d) => {
+        if (!cancelled) setEventsData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setEventsData({ events: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.showEvents, state.range, state.asOf]);
 
   // ============== handlers ==============
 
   const loadPreset = useCallback((preset: ChartPreset) => {
-    setState((prev) => presetToWorkspace(preset, prev.range));
+    setState((prev) =>
+      presetToWorkspace(preset, prev.range, prev.asOf, prev.showEvents),
+    );
   }, []);
 
   const setRange = useCallback(
@@ -145,6 +192,16 @@ export default function ChartsPage() {
 
   const setTransform = useCallback(
     (t: ChartTransform) => setState((s) => ({ ...s, transform: t })),
+    [],
+  );
+
+  const setAsOf = useCallback(
+    (asOf: string | null) => setState((s) => ({ ...s, asOf })),
+    [],
+  );
+
+  const toggleEvents = useCallback(
+    () => setState((s) => ({ ...s, showEvents: !s.showEvents })),
     [],
   );
 
@@ -217,6 +274,7 @@ export default function ChartsPage() {
   }, [state.panes, seriesData]);
 
   const targetPane = state.panes.find((p) => p.id === searchTargetPaneId);
+  const eventsForOverlay = state.showEvents ? eventsData?.events ?? [] : [];
 
   return (
     <div className="min-h-screen bg-[var(--bg)] py-6 px-6 lg:px-8">
@@ -227,12 +285,20 @@ export default function ChartsPage() {
               Charts Workspace
             </h1>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
-              M3
+              M4
             </span>
+            {state.asOf && (
+              <span
+                className="rounded-full border border-[rgba(168,85,247,0.4)] bg-[rgba(168,85,247,0.08)] px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-[#a855f7]"
+                title="时间机器：当前显示某历史日期的 vintage 数据"
+              >
+                AS OF {state.asOf}
+              </span>
+            )}
           </div>
           <p className="text-sm text-[var(--text-secondary)]">
             自由探索 {catalog?.indicators.length ?? "..."} 个指标 — preset
-            起步、随后自由组合 pane / series / 时间区间，URL 即配置。
+            起步、随后自由组合 pane / series / 时间区间 / vintage，URL 即配置。
           </p>
         </header>
 
@@ -241,9 +307,13 @@ export default function ChartsPage() {
             presets={catalog.presets}
             range={state.range}
             transform={state.transform}
+            asOf={state.asOf}
+            showEvents={state.showEvents}
             onLoadPreset={loadPreset}
             onRangeChange={setRange}
             onTransformChange={setTransform}
+            onAsOfChange={setAsOf}
+            onToggleEvents={toggleEvents}
             onAddPane={addPane}
             onReset={reset}
             onCopyUrl={copyUrl}
@@ -269,6 +339,7 @@ export default function ChartsPage() {
               key={pane.id}
               pane={pane}
               series={series}
+              events={eventsForOverlay}
               missingSymbols={missingSymbols}
               onRemoveSeries={(sym) => removeSeries(pane.id, sym)}
               onAddIndicator={() => openSearchFor(pane.id)}
@@ -283,7 +354,36 @@ export default function ChartsPage() {
           )}
         </div>
 
-        {/* warnings panel — 全局视角，独立于 pane */}
+        {/* events 摘要：当前区间事件总数 + 各类型分布 */}
+        {state.showEvents && eventsData && eventsData.events.length > 0 && (
+          <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3 text-xs">
+            <div className="mb-2 flex items-center gap-2 text-[var(--text-secondary)]">
+              <span className="font-medium">当前区间事件标记</span>
+              <span className="text-[var(--text-faint)]">
+                · 共 {eventsData.events.length} 条
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(
+                eventsData.events.reduce<Record<string, number>>((acc, e) => {
+                  acc[e.type] = (acc[e.type] ?? 0) + 1;
+                  return acc;
+                }, {}),
+              )
+                .sort(([, a], [, b]) => b - a)
+                .map(([type, count]) => (
+                  <span
+                    key={type}
+                    className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-inset)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]"
+                  >
+                    {type}: {count}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* warnings panel */}
         {seriesData && seriesData.warnings.length > 0 && (
           <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
             <h4 className="mb-2 text-xs font-medium text-[var(--text-secondary)]">

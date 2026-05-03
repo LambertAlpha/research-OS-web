@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Copy, RotateCcw, Plus } from "lucide-react";
+import { Copy, RotateCcw, Plus, Bell, BellOff, Clock } from "lucide-react";
 import type { ChartPreset } from "@/types/api";
 import {
   TIME_RANGE_PRESETS,
@@ -18,9 +18,13 @@ interface ChartsToolbarProps {
   presets: ChartPreset[];
   range: TimeRangePreset;
   transform: ChartTransform;
+  asOf: string | null;
+  showEvents: boolean;
   onLoadPreset: (preset: ChartPreset) => void;
   onRangeChange: (r: TimeRangePreset) => void;
   onTransformChange: (t: ChartTransform) => void;
+  onAsOfChange: (asOf: string | null) => void;
+  onToggleEvents: () => void;
   onAddPane: () => void;
   onReset: () => void;
   onCopyUrl: () => void;
@@ -37,9 +41,13 @@ export function ChartsToolbar({
   presets,
   range,
   transform,
+  asOf,
+  showEvents,
   onLoadPreset,
   onRangeChange,
   onTransformChange,
+  onAsOfChange,
+  onToggleEvents,
   onAddPane,
   onReset,
   onCopyUrl,
@@ -110,6 +118,57 @@ export function ChartsToolbar({
               ))}
             </div>
           </div>
+
+          {/* As Of vintage replay */}
+          <div className="flex items-center gap-1.5">
+            <span
+              className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-[var(--text-faint)]"
+              title="时间机器：查看某历史日期时点的数据状态（仅 raw 类型生效）"
+            >
+              <Clock className="h-3 w-3" />
+              As Of
+            </span>
+            <input
+              type="date"
+              value={asOf ?? ""}
+              onChange={(e) => onAsOfChange(e.target.value || null)}
+              max={new Date().toISOString().slice(0, 10)}
+              className={
+                "rounded-md border bg-[var(--bg-inset)] px-2 py-0.5 text-xs outline-none " +
+                (asOf
+                  ? "border-[rgba(168,85,247,0.4)] text-[var(--text-primary)]"
+                  : "border-[var(--border-subtle)] text-[var(--text-muted)]")
+              }
+            />
+            {asOf && (
+              <button
+                onClick={() => onAsOfChange(null)}
+                className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-inset)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                title="清除 As Of（回到最新 vintage）"
+              >
+                清除
+              </button>
+            )}
+          </div>
+
+          {/* Events overlay toggle */}
+          <button
+            onClick={onToggleEvents}
+            className={
+              "flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors " +
+              (showEvents
+                ? "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                : "border-[var(--border-subtle)] bg-[var(--bg-inset)] text-[var(--text-muted)] hover:text-[var(--text-primary)]")
+            }
+            title={
+              showEvents
+                ? "已显示事件标记（灯号转换、闸门开关、模式触发等）"
+                : "已隐藏事件标记"
+            }
+          >
+            {showEvents ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+            事件
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
