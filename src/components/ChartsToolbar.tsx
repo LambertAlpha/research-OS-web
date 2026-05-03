@@ -6,25 +6,28 @@
  */
 "use client";
 
-import { Copy, RotateCcw, Plus, Bell, BellOff, Clock } from "lucide-react";
-import type { ChartPreset } from "@/types/api";
+import { Copy, RotateCcw, Plus, Clock } from "lucide-react";
+import type { ChartPreset, ChartEventType } from "@/types/api";
 import {
   TIME_RANGE_PRESETS,
   type TimeRangePreset,
   type ChartTransform,
 } from "@/lib/workspace-state";
+import { EventsSelector } from "./EventsSelector";
 
 interface ChartsToolbarProps {
   presets: ChartPreset[];
   range: TimeRangePreset;
   transform: ChartTransform;
   asOf: string | null;
-  showEvents: boolean;
+  eventTypes: ChartEventType[];
+  enabledEventTypes: string[];
+  defaultEventTypes: string[];
   onLoadPreset: (preset: ChartPreset) => void;
   onRangeChange: (r: TimeRangePreset) => void;
   onTransformChange: (t: ChartTransform) => void;
   onAsOfChange: (asOf: string | null) => void;
-  onToggleEvents: () => void;
+  onEventTypesChange: (next: string[]) => void;
   onAddPane: () => void;
   onReset: () => void;
   onCopyUrl: () => void;
@@ -42,12 +45,14 @@ export function ChartsToolbar({
   range,
   transform,
   asOf,
-  showEvents,
+  eventTypes,
+  enabledEventTypes,
+  defaultEventTypes,
   onLoadPreset,
   onRangeChange,
   onTransformChange,
   onAsOfChange,
-  onToggleEvents,
+  onEventTypesChange,
   onAddPane,
   onReset,
   onCopyUrl,
@@ -151,24 +156,13 @@ export function ChartsToolbar({
             )}
           </div>
 
-          {/* Events overlay toggle */}
-          <button
-            onClick={onToggleEvents}
-            className={
-              "flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors " +
-              (showEvents
-                ? "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                : "border-[var(--border-subtle)] bg-[var(--bg-inset)] text-[var(--text-muted)] hover:text-[var(--text-primary)]")
-            }
-            title={
-              showEvents
-                ? "已显示事件标记（灯号转换、闸门开关、模式触发等）"
-                : "已隐藏事件标记"
-            }
-          >
-            {showEvents ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-            事件
-          </button>
+          {/* Events selector — multi-select popover */}
+          <EventsSelector
+            eventTypes={eventTypes}
+            enabled={enabledEventTypes}
+            defaultRecommended={defaultEventTypes}
+            onChange={onEventTypesChange}
+          />
         </div>
 
         <div className="flex items-center gap-2">

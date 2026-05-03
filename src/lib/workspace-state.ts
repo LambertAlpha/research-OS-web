@@ -31,14 +31,26 @@ export interface WorkspacePane {
   id: string;
   title: string;
   symbols: string[];
+  // 用户手动覆盖该 pane 内 series 的 y 轴归属，缺失时走 ChartPane 自动聚类
+  axisOverrides?: Record<string, "left" | "right">;
 }
+
+// 推荐默认勾选的事件类型（覆盖核心模型决策事件，不含 rule_triggered/alert 噪音）
+export const DEFAULT_ENABLED_EVENT_TYPES: string[] = [
+  "risk_light_change",
+  "hard_stop",
+  "macro_state_change",
+  "equity_regime_change",
+  "btc_pattern_triggered",
+];
 
 export interface WorkspaceState {
   panes: WorkspacePane[];
   range: TimeRangePreset;
   transform: ChartTransform;
   asOf: string | null; // YYYY-MM-DD or null（最新 vintage）
-  showEvents: boolean;  // 是否在每个 pane 上叠加事件 markers
+  // 选中的事件类型 ID 列表；空数组 = 不显示任何 markers
+  enabledEventTypes: string[];
 }
 
 let _idCounter = 0;
@@ -62,7 +74,7 @@ export const DEFAULT_WORKSPACE: WorkspaceState = {
   range: "1Y",
   transform: "none",
   asOf: null,
-  showEvents: true,
+  enabledEventTypes: [...DEFAULT_ENABLED_EVENT_TYPES],
 };
 
 export function rangeToDays(range: TimeRangePreset): number {
@@ -98,14 +110,14 @@ export function presetToWorkspace(
   preset: ChartPreset,
   carryRange?: TimeRangePreset,
   carryAsOf: string | null = null,
-  carryShowEvents: boolean = true,
+  carryEventTypes: string[] = [...DEFAULT_ENABLED_EVENT_TYPES],
 ): WorkspaceState {
   return {
     panes: preset.panes.map((p) => newPane(p.title, [...p.indicators])),
     range: carryRange ?? rangeFromDays(preset.default_range_days),
     transform: "none",
     asOf: carryAsOf,
-    showEvents: carryShowEvents,
+    enabledEventTypes: carryEventTypes,
   };
 }
 
@@ -114,11 +126,15 @@ export function presetToWorkspace(
 // ============================================================
 
 interface CompactState {
-  p: { t: string; s: string[] }[];
+  // 新版字段
+  p: { t: string; s: string[]; o?: Record<string, "left" | "right"> }[];
   r: TimeRangePreset;
   x: ChartTransform;
   a?: string | null;
-  e?: boolean;
+  // M5: 选中事件类型数组（覆盖 M4 的 boolean e）
+  et?: string[];
+  // M4 兼容字段（旧 URL 中的 boolean）
+  e?: boolean | string[];
 }
 
 function utf8ToBase64(s: string): string {
@@ -133,11 +149,17 @@ function base64ToUtf8(s: string): string {
 export function encodeWorkspace(state: WorkspaceState): string {
   if (typeof window === "undefined") return "";
   const compact: CompactState = {
-    p: state.panes.map((p) => ({ t: p.title, s: p.symbols })),
+    p: state.panes.map((p) => {
+      const entry: CompactState["p"][number] = { t: p.title, s: p.symbols };
+      if (p.axisOverrides && Object.keys(p.axisOverrides).length > 0) {
+        entry.o = p.axisOverrides;
+      }
+      return entry;
+    }),
     r: state.range,
     x: state.transform,
     a: state.asOf,
-    e: state.showEvents,
+    et: state.enabledEventTypes,
   };
   return utf8ToBase64(JSON.stringify(compact));
 }
@@ -147,14 +169,35 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
   try {
     const compact = JSON.parse(base64ToUtf8(encoded)) as CompactState;
     if (!Array.isArray(compact?.p)) return null;
+
+    // 事件类型解析：et > e（兼容 M4 boolean / 老 array）
+    let enabledEventTypes: string[];
+    if (Array.isArray(compact.et)) {
+      enabledEventTypes = compact.et;
+    } else if (Array.isArray(compact.e)) {
+      enabledEventTypes = compact.e;
+    } else if (compact.e === false) {
+      enabledEventTypes = [];
+    } else {
+      // M4 e=true 或缺失 → 默认 5 类
+      enabledEventTypes = [...DEFAULT_ENABLED_EVENT_TYPES];
+    }
+
     return {
-      panes: compact.p.map((p) =>
-        newPane(typeof p.t === "string" ? p.t : "Pane", Array.isArray(p.s) ? p.s : []),
-      ),
+      panes: compact.p.map((p) => {
+        const pane = newPane(
+          typeof p.t === "string" ? p.t : "Pane",
+          Array.isArray(p.s) ? p.s : [],
+        );
+        if (p.o && typeof p.o === "object") {
+          pane.axisOverrides = p.o;
+        }
+        return pane;
+      }),
       range: compact.r ?? "1Y",
       transform: compact.x ?? "none",
       asOf: compact.a ?? null,
-      showEvents: compact.e ?? true,
+      enabledEventTypes,
     };
   } catch {
     return null;
