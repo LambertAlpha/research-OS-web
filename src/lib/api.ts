@@ -89,13 +89,9 @@ class ApiClient {
       ...(options.headers as Record<string, string>),
     };
 
-    // 写操作需要 API Key 认证
-    if (options.method === "POST" || options.method === "PUT" || options.method === "DELETE") {
-      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-      if (apiKey) {
-        headers["X-API-Key"] = apiKey;
-      }
-    }
+    // M7 安全收紧：API_KEY 不再走 NEXT_PUBLIC_*（client bundle 会暴露），
+    // 而是由 src/middleware.ts 在 server 端为写操作注入 X-API-Key header。
+    // 此处不再读 process.env.NEXT_PUBLIC_API_KEY。
 
     const response = await fetch(url, {
       ...options,
