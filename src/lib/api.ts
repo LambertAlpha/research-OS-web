@@ -25,6 +25,9 @@ import type {
   BacktestResult,
   BacktestModelType,
   SchedulerBatchesResponse,
+  ChartCatalogResponse,
+  ChartSeriesResponse,
+  ChartEventsResponse,
 } from "@/types/api";
 
 /**
@@ -436,6 +439,54 @@ class ApiClient {
         model,
       }),
     });
+  }
+
+  // ==================== Charts Workspace (M2) ====================
+
+  async getChartCatalog(params: {
+    module?: string;
+    search?: string;
+    activeOnly?: boolean;
+  } = {}): Promise<ChartCatalogResponse> {
+    const qs = new URLSearchParams();
+    if (params.module) qs.set("module", params.module);
+    if (params.search) qs.set("search", params.search);
+    if (params.activeOnly !== undefined) qs.set("active_only", String(params.activeOnly));
+    const q = qs.toString();
+    return this.request(`/api/chart/catalog${q ? "?" + q : ""}`);
+  }
+
+  async getChartSeries(params: {
+    symbols: string[];
+    start?: string;
+    end?: string;
+    asOf?: string;
+    resolution?: "D" | "W" | "M";
+    transform?: "none" | "normalize" | "pct_change";
+  }): Promise<ChartSeriesResponse> {
+    const qs = new URLSearchParams();
+    qs.set("symbols", params.symbols.join(","));
+    if (params.start) qs.set("start", params.start);
+    if (params.end) qs.set("end", params.end);
+    if (params.asOf) qs.set("as_of", params.asOf);
+    if (params.resolution) qs.set("resolution", params.resolution);
+    if (params.transform) qs.set("transform", params.transform);
+    return this.request(`/api/chart/series?${qs.toString()}`);
+  }
+
+  async getChartEvents(params: {
+    model?: "combined" | "liquidity" | "macro" | "equity" | "btc";
+    start?: string;
+    end?: string;
+    types?: string[];
+  } = {}): Promise<ChartEventsResponse> {
+    const qs = new URLSearchParams();
+    if (params.model) qs.set("model", params.model);
+    if (params.start) qs.set("start", params.start);
+    if (params.end) qs.set("end", params.end);
+    if (params.types && params.types.length) qs.set("types", params.types.join(","));
+    const q = qs.toString();
+    return this.request(`/api/chart/events${q ? "?" + q : ""}`);
   }
 }
 
