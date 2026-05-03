@@ -508,3 +508,93 @@ export interface AlertRecord {
   trigger_rule?: string;
   acknowledged: boolean;
 }
+
+// ============================================================================
+// Charts Workspace 类型 (M2)
+// ============================================================================
+
+export interface ChartIndicator {
+  symbol: string;
+  display_name: string;
+  description: string | null;
+  source: string;
+  source_symbol: string | null;
+  frequency: string;
+  model_module: string;
+  unit: string | null;
+  thresholds: unknown;
+  series_type: "raw" | "feature";
+  is_active: boolean;
+}
+
+export interface ChartEventType {
+  id: string;
+  name: string;
+  model: string | null;
+  states: string[];
+  default_severity: "info" | "warning" | "critical";
+}
+
+export interface ChartPresetPane {
+  title: string;
+  indicators: string[];
+}
+
+export interface ChartPreset {
+  id: string;
+  name: string;
+  description: string;
+  model: string;
+  panes: ChartPresetPane[];
+  events_overlay: string[];
+  default_range_days: number;
+}
+
+export interface ChartCatalogResponse {
+  indicators: ChartIndicator[];
+  total: number;
+  event_types: ChartEventType[];
+  presets: ChartPreset[];
+}
+
+export interface ChartSeriesPoint {
+  ts: string;
+  value: number | null;
+  vintage_date?: string | null;
+  quality_flag?: string | null;
+}
+
+export interface ChartSeriesWarning {
+  symbol: string;
+  code: "MISSING" | "UNSUPPORTED_AS_OF" | "UNSUPPORTED_TRANSFORM" | string;
+  message: string;
+}
+
+export interface ChartSeries {
+  symbol: string;
+  display_name: string;
+  unit: string | null;
+  source: "raw" | "feature";
+  points: ChartSeriesPoint[];
+}
+
+export interface ChartSeriesResponse {
+  series: ChartSeries[];
+  warnings: ChartSeriesWarning[];
+}
+
+export interface ChartEvent {
+  ts: string;
+  model: string;
+  type: string;
+  severity: "info" | "warning" | "critical";
+  label: string;
+  from_state: string | null;
+  to_state: string | null;
+  rule_id: string | null;
+  payload: Record<string, unknown> | null;
+}
+
+export interface ChartEventsResponse {
+  events: ChartEvent[];
+}
