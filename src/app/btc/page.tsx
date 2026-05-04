@@ -593,6 +593,8 @@ export default function BtcPage() {
                     patternId={patId}
                     indicatorStates={indicatorStates}
                     triggeredPatterns={patterns}
+                    seriesMap={seriesMap}
+                    thresholdsBySymbol={thresholdsBySymbol}
                   />
                 ))}
               </div>
@@ -717,70 +719,6 @@ export default function BtcPage() {
 }
 
 // ============================================================================
-// Sparkline 占位组件 (deterministic mock，等接 series API)
-// ============================================================================
-
-function generateMockSparkline(seedKey: string, direction: number): number[] {
-  // 用字符串哈希作为种子，确保同一指标的走势稳定
-  let h = 2166136261;
-  for (let i = 0; i < seedKey.length; i++) {
-    h = (h ^ seedKey.charCodeAt(i)) * 16777619;
-  }
-  const out: number[] = [];
-  let v = 0;
-  for (let i = 0; i < 16; i++) {
-    h = (h * 9301 + 49297) % 233280;
-    const noise = (h / 233280 - 0.5) * 0.6;
-    v += direction * 0.25 + noise + Math.sin(i * 0.9) * 0.15;
-    out.push(v);
-  }
-  return out;
-}
-
-function Sparkline({
-  state,
-  seedKey,
-  width = 56,
-  height = 16,
-  className,
-}: {
-  state: string;
-  seedKey: string;
-  width?: number;
-  height?: number;
-  className?: string;
-}) {
-  const direction = state === "accumulation" ? 1 : state === "distribution" ? -1 : 0;
-  const points = generateMockSparkline(seedKey, direction);
-  const maxVal = Math.max(...points);
-  const minVal = Math.min(...points);
-  const range = maxVal - minVal || 1;
-  const stepX = width / (points.length - 1);
-
-  const path = points
-    .map((v, i) => {
-      const x = (i * stepX).toFixed(1);
-      const y = (height - ((v - minVal) / range) * height).toFixed(1);
-      return `${i === 0 ? "M" : "L"}${x},${y}`;
-    })
-    .join(" ");
-
-  const color =
-    state === "accumulation" ? "#10b981" : state === "distribution" ? "#ef4444" : "#71717a";
-
-  return (
-    <svg
-      width={width}
-      height={height}
-      className={className}
-      aria-label={`mini chart placeholder for ${seedKey}, state=${state}`}
-    >
-      <path d={path} stroke={color} strokeWidth={1.2} fill="none" opacity={0.75} />
-    </svg>
-  );
-}
-
-// ============================================================================
 // 8 模式矩阵卡片 (L3 Pattern Card)
 // ============================================================================
 
@@ -810,10 +748,14 @@ function PatternMatrixCard({
   patternId,
   indicatorStates,
   triggeredPatterns,
+  seriesMap,
+  thresholdsBySymbol,
 }: {
   patternId: string;
   indicatorStates: Record<string, string>;
   triggeredPatterns: BtcPattern[];
+  seriesMap: Map<string, ChartSeriesPoint[]>;
+  thresholdsBySymbol: Map<string, BtcIndicatorChartThresholds | null>;
 }) {
   const patInfo = PATTERN_NAMES[patternId] || { emoji: "?", desc: "" };
   const dirInfo = PATTERN_DIRECTION[patternId] || { label: "?", color: "#6b7280" };
@@ -1022,9 +964,12 @@ function PatternMatrixCard({
                 >
                   {reliability}
                 </span>
-                <Sparkline
-                  state={currentState}
-                  seedKey={`${patternId}-${indId}`}
+                <BtcIndicatorChart
+                  symbol={indId}
+                  data={seriesMap.get(indId) || []}
+                  thresholds={thresholdsBySymbol.get(indId) ?? null}
+                  currentState={currentState as BtcIndicatorState}
+                  size="sparkline"
                   className="flex-shrink-0 opacity-80"
                 />
                 <div className="flex items-center gap-0.5 flex-shrink-0">
