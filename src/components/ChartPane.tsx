@@ -340,6 +340,18 @@ export function ChartPane({
     });
 
     if (series.length > 0) {
+      // M7 修复「BTC-USD 偶发显示为水平线」bug：
+      // removeSeries() + addSeries() 流程中，lightweight-charts 内部 priceScale
+      // viewport 在 axis 分组变化时（如新加入一个量级远大/远小的 series 触发分轴）
+      // 可能保留旧 bounds，导致新 series 数据被压成水平线。
+      // 显式 applyOptions({autoScale:true}) 强制 priceScale 重新按当前数据 fit。
+      for (const scaleId of ["left", "right"] as const) {
+        try {
+          chart.priceScale(scaleId).applyOptions({ autoScale: true });
+        } catch {
+          // priceScale 不可用时安全 ignore
+        }
+      }
       chart.timeScale().fitContent();
     }
   }, [series, axisOverrides]);
