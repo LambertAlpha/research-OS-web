@@ -14,7 +14,7 @@
 import { X, Plus, Trash2 } from "lucide-react";
 import { ChartPane } from "./ChartPane";
 import type { ChartEvent, ChartSeries } from "@/types/api";
-import type { TimeRangePreset, WorkspacePane } from "@/lib/workspace-state";
+import { rangeToDays, type TimeRangePreset, type WorkspacePane } from "@/lib/workspace-state";
 import { getSeriesColor } from "@/lib/chart-theme";
 
 const PANE_TIMERANGE_OPTIONS: { value: TimeRangePreset | ""; label: string }[] = [
@@ -37,6 +37,8 @@ interface EditablePaneProps {
   customMarkers?: { id: string; ts: string; label: string; severity: "info" | "warning" | "critical" }[];
   visibleStart?: string;
   visibleEnd?: string;
+  // 全局 range — 用于 disable 大于全局的 pane timeRange 选项（避免数据被隐形截断）
+  globalRange?: TimeRangePreset;
   onRemoveSeries: (symbol: string) => void;
   onAddIndicator: () => void;
   onDeletePane: () => void;
@@ -77,6 +79,7 @@ export function EditablePane({
   customMarkers,
   visibleStart,
   visibleEnd,
+  globalRange,
   onRemoveSeries,
   onAddIndicator,
   onDeletePane,
@@ -109,13 +112,21 @@ export function EditablePane({
                 onSetPaneTimeRange(v === "" ? null : (v as TimeRangePreset));
               }}
               className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-1.5 py-0.5 text-xs text-[var(--text-secondary)] outline-none hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
-              title="此 pane 的 timeRange override（仅 zoom in 子区间；要更大区间请调全局）"
+              title="此 pane 的 timeRange override（仅 zoom in 至 ≤ 全局范围；要更大区间请调全局工具栏）"
             >
-              {PANE_TIMERANGE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
+              {PANE_TIMERANGE_OPTIONS.map((opt) => {
+                const isLarger =
+                  opt.value !== "" &&
+                  globalRange !== undefined &&
+                  rangeToDays(opt.value as TimeRangePreset) >
+                    rangeToDays(globalRange);
+                return (
+                  <option key={opt.value} value={opt.value} disabled={isLarger}>
+                    {opt.label}
+                    {isLarger ? " (>全局)" : ""}
+                  </option>
+                );
+              })}
             </select>
           )}
           <button

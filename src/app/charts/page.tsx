@@ -444,6 +444,7 @@ export default function ChartsPage() {
               events={eventsForOverlay}
               visibleStart={visibleStart}
               visibleEnd={visibleEnd}
+              globalRange={state.range}
               customMarkers={state.customMarkers}
               missingSymbols={missingSymbols}
               ratioMode={state.ratioMode}
