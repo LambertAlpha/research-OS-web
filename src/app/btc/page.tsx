@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 页面加载时自动获取最新 BTC 模型输出，用户可点击"运行模型"刷新。
- * [OUTPUT]: (JSX) - BTC 中期模型详情页，以结构模式(P1-P8)为核心展示，辅以指标热力图（含阈值提示）和信号摘要。
- * [POS]: BTC 路由 (/btc)。展示 BTC v8.0 模式识别架构的五层输出，通过 /api/btc 获取数据。
- *         页面布局：模式总览(Hero) → 触发模式详情 → 指标热力图 → 信号摘要(降级) → 报告/回测/字典。
+ * [OUTPUT]: (JSX) - BTC 中期模型详情页，以「8 个小模型矩阵」为主轴展示模式识别架构。
+ * [POS]: BTC 路由 (/btc)。展示 BTC v8.0 五层架构，通过 /api/btc 获取数据。
+ *         页面布局：信号 Hero(L5+L4) → 8 小模型矩阵(L3 Pattern) → L1 全指标看板(A/B/C/D) → 报告/回测/字典。
+ *         每个 Pattern 卡都完整显示触发条件命中度（不再 opacity 弱化），sparkline 占位待接 series API。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
@@ -10,19 +11,26 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from "react";
 // @ts-expect-error - Next.js 自动提供 react-dom 类型
 import { createPortal } from "react-dom";
 import { Header } from "@/components/Header";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
+import {
+  BtcIndicatorChart,
+  type BtcIndicatorChartThresholds,
+  type BtcIndicatorState,
+} from "@/components/BtcIndicatorChart";
 import dynamic from "next/dynamic";
 const BacktestPanel = dynamic(
   () => import("@/components/BacktestPanel").then((m) => ({ default: m.BacktestPanel })),
   { ssr: false }
 );
 import apiClient from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { useChartCatalog, useChartSeriesBatch } from "@/lib/useChartSeries";
 
-import type { BtcOutput, HistoryRecord } from "@/types/api";
+import type { BtcOutput, BtcPattern, ChartSeriesPoint, HistoryRecord } from "@/types/api";
 import {
   Bitcoin,
   Target,
@@ -329,6 +337,52 @@ export default function BtcPage() {
   const neuCount = totalIndicators - accCount - distCount;
   const allNeutral = totalIndicators > 0 && accCount === 0 && distCount === 0;
 
+  // -------------------------------------------------------------------------
+  // L1 全指标看板：批量拉 series + catalog（拿 thresholds.numeric）
+  // -------------------------------------------------------------------------
+  const allIndicatorSymbols = useMemo(
+    () => Object.values(INDICATOR_GROUPS).flatMap((g) => g.ids),
+    []
+  );
+  const { data: catalogData } = useChartCatalog();
+  const {
+    dataMap: seriesMap,
+    isLoading: seriesLoading,
+  } = useChartSeriesBatch(allIndicatorSymbols, 90, !isLoading && !!btcOutput);
+
+  // catalog → thresholds.numeric Map（仅保留有数值阈值的）
+  const thresholdsBySymbol = useMemo(() => {
+    const m = new Map<string, BtcIndicatorChartThresholds | null>();
+    const inds = catalogData?.indicators ?? [];
+    for (const ind of inds) {
+      const thr = (ind.thresholds ?? null) as Record<string, unknown> | null;
+      const numeric = thr && typeof thr === "object"
+        ? (thr["numeric"] as Record<string, unknown> | undefined)
+        : undefined;
+      if (
+        numeric &&
+        (typeof numeric.accumulation === "number" ||
+          typeof numeric.distribution === "number")
+      ) {
+        m.set(ind.symbol, {
+          accumulation:
+            typeof numeric.accumulation === "number" ? numeric.accumulation : undefined,
+          distribution:
+            typeof numeric.distribution === "number" ? numeric.distribution : undefined,
+          unit: typeof numeric.unit === "string" ? numeric.unit : undefined,
+          direction:
+            numeric.direction === "higher_is_accumulation" ||
+            numeric.direction === "lower_is_accumulation"
+              ? numeric.direction
+              : undefined,
+        });
+      } else {
+        m.set(ind.symbol, null);
+      }
+    }
+    return m;
+  }, [catalogData]);
+
   return (
     <div className="min-h-screen">
       <Header
@@ -390,103 +444,97 @@ export default function BtcPage() {
             )}
 
             {/* ================================================================
-                Section 1: Hero - 结构模式总览 (8 模式网格)
+                Section A: 顶部信号 Hero (L5 信号 + L4 验证嵌入底部)
+                原 Section 4 信号摘要上移并重新设计
                 ================================================================ */}
-            <div className="mb-6">
-              <h2 className="section-title">
-                <Layers className="w-5 h-5 text-orange-400" />
-                结构模式总览
-              </h2>
-
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {ALL_PATTERNS.map((patId) => {
-                  const patInfo = PATTERN_NAMES[patId] || { emoji: "?", desc: "" };
-                  const dirInfo = PATTERN_DIRECTION[patId] || { label: "?", color: "#6b7280" };
-                  const triggered = patterns.find((p) => p.pattern_id === patId);
-                  const isTriggered = !!triggered;
-                  const shortName = patId.replace(/^P\d_/, "").replace(/_/g, " ");
-
-                  return (
+            <div className="mb-6 rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]">
+              <div className="p-5 flex items-center gap-6 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{signalCfg.emoji}</span>
+                  <div>
                     <div
-                      key={patId}
-                      className="relative rounded-[14px] p-4 overflow-hidden border transition-all"
-                      style={{
-                        backgroundColor: isTriggered ? "var(--bg-card)" : "transparent",
-                        borderColor: isTriggered ? `${dirInfo.color}40` : "var(--border-subtle)",
-                        opacity: isTriggered ? 1 : 0.4,
-                      }}
+                      className="text-2xl font-bold leading-tight"
+                      style={{ color: signalCfg.color }}
                     >
-                      {/* 触发状态亮条 */}
-                      {isTriggered && (
-                        <div
-                          className="absolute top-0 left-0 right-0 h-[2px]"
-                          style={{ backgroundColor: dirInfo.color }}
-                        />
-                      )}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-lg">{patInfo.emoji}</span>
-                        <span
-                          className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                          style={{
-                            backgroundColor: `${dirInfo.color}15`,
-                            color: dirInfo.color,
-                          }}
-                        >
-                          {dirInfo.label}
-                        </span>
-                      </div>
-                      <div className="text-xs font-medium text-zinc-300 mb-1 leading-tight capitalize">
-                        {shortName.toLowerCase()}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-[10px] text-zinc-500 font-mono">
-                          {patId.split("_")[0]}
-                        </div>
-                        {isTriggered && triggered && (
-                          <div
-                            className="text-xs font-bold"
-                            style={{ color: dirInfo.color }}
-                          >
-                            {triggered.matched_count}/{triggered.required_count}
-                          </div>
-                        )}
-                      </div>
-                      {/* 悬浮指标详情 */}
-                      <PatternTooltip patternId={patId} indicatorStates={indicatorStates} />
+                      {signalCfg.label}
                     </div>
-                  );
-                })}
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">
+                      L5 SIGNAL · {signal.replace("_", " ")}
+                    </div>
+                  </div>
+                </div>
+                <div className="h-12 w-px bg-zinc-800" />
+                <div>
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">
+                    Confidence
+                  </div>
+                  <div
+                    className="text-base font-medium"
+                    style={{ color: CONFIDENCE_COLOR[confidence] || "#6b7280" }}
+                  >
+                    {confidence}
+                  </div>
+                </div>
+                <div className="h-12 w-px bg-zinc-800" />
+                <div>
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">
+                    指标分布 ({totalIndicators})
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="text-emerald-400 font-medium tabular-nums">{accCount}</span>
+                    <span className="text-[10px] text-zinc-500">累积</span>
+                    <span className="text-zinc-700">·</span>
+                    <span className="text-zinc-300 font-medium tabular-nums">{neuCount}</span>
+                    <span className="text-[10px] text-zinc-500">中性</span>
+                    <span className="text-zinc-700">·</span>
+                    <span className="text-red-400 font-medium tabular-nums">{distCount}</span>
+                    <span className="text-[10px] text-zinc-500">释放</span>
+                  </div>
+                </div>
+                {btcOutput.action && (
+                  <>
+                    <div className="h-12 w-px bg-zinc-800" />
+                    <div className="flex-1 min-w-[180px]">
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">
+                        操作建议
+                      </div>
+                      <div className="text-sm text-zinc-300 leading-snug">
+                        {btcOutput.action}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* 验证状态条 */}
-              <div className="rounded-[14px] px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center gap-4">
-                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              {/* L4 验证状态嵌入底部 */}
+              <div className="px-5 py-2.5 border-t border-zinc-800/60 flex items-center gap-3 bg-zinc-900/30 flex-wrap">
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
                   {validation?.cancellation ? (
-                    <ShieldAlert className="w-4 h-4 text-amber-400" />
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
                   ) : validation?.resonance ? (
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5" />
                   )}
                   <span className="uppercase tracking-wider font-medium">L4 验证</span>
                 </div>
-                <div className="h-4 w-px bg-zinc-700" />
                 {validation?.cancellation ? (
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-xs flex-wrap">
                     <span className="font-medium text-amber-400">多空抵销</span>
                     <span className="text-zinc-500">
-                      {validation.bull_count} 多头 vs {validation.bear_count} 空头
+                      {validation.bull_count} 多 vs {validation.bear_count} 空
                     </span>
-                    <span className="text-[10px] text-amber-400/80 px-2 py-0.5 rounded bg-amber-500/10">
+                    <span className="text-[10px] text-amber-400/80 px-1.5 py-0.5 rounded bg-amber-500/10">
                       信号降级 NEUTRAL
                     </span>
                   </div>
                 ) : validation?.resonance ? (
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-xs flex-wrap">
                     <span
                       className="font-medium"
                       style={{
-                        color: validation.resonance.type === "bull_ultra" ? "#10b981" : "#ef4444",
+                        color:
+                          validation.resonance.type === "bull_ultra" ? "#10b981" : "#ef4444",
                       }}
                     >
                       {validation.resonance.name}
@@ -504,230 +552,50 @@ export default function BtcPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-zinc-400">无共振/抵销</span>
-                    <span className="text-zinc-600">
-                      多头: {validation?.bull_count ?? 0} | 空头: {validation?.bear_count ?? 0}
-                    </span>
+                  <div className="text-xs text-zinc-500">
+                    无共振/抵销 · 多头 {validation?.bull_count ?? 0} / 空头{" "}
+                    {validation?.bear_count ?? 0}
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="divider" />
-
             {/* ================================================================
-                Section 2: 触发模式详情卡片（含指标匹配详情）
+                Section B: 8 个小模型矩阵 (L3 Pattern Layer)
+                每张卡完整显示触发条件命中度，按"已触发/接近触发/未触发"三态着色
                 ================================================================ */}
             <div className="mb-8">
-              <h2 className="section-title">
-                <Zap className="w-5 h-5 text-orange-400" />
-                触发模式详情
-              </h2>
-
-              {patterns.length === 0 ? (
-                <div className="rounded-[14px] p-8 bg-[var(--bg-card)] border border-[var(--border-subtle)] text-center">
-                  <Eye className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
-                  <div className="text-zinc-400 font-medium">无模式触发</div>
-                  <div className="text-sm text-zinc-600 mt-1">
-                    所有 8 个结构模式均未满足触发条件 → P8 默认状态（观望）
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h2 className="section-title !mb-0">
+                  <Layers className="w-5 h-5 text-orange-400" />
+                  8 个结构模式（小模型）
+                </h2>
+                <div className="text-[11px] text-zinc-500 flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>已触发</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span>接近触发 (≥50%)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                    <span>未触发</span>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {patterns.map((p) => {
-                    const patInfo = PATTERN_NAMES[p.pattern_id] || { emoji: "?", desc: "" };
-                    const dirInfo = PATTERN_DIRECTION[p.pattern_id] || { label: "?", color: "#6b7280" };
-                    const requiredInds = PATTERN_REQUIRED_INDICATORS[p.pattern_id] || [];
-                    const requiredStates = PATTERN_REQUIRED_STATES[p.pattern_id] || {};
+              </div>
 
-                    return (
-                      <div
-                        key={p.pattern_id}
-                        className="relative rounded-[14px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
-                      >
-                        {/* 顶部亮条 */}
-                        <div
-                          className="absolute top-0 left-0 right-0 h-[2px]"
-                          style={{ backgroundColor: dirInfo.color }}
-                        />
-
-                        <div className="p-5">
-                          {/* 头部：名称 + 信号 */}
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{patInfo.emoji}</span>
-                              <div>
-                                <div className="text-base font-medium text-zinc-100">{p.name}</div>
-                                <div className="text-xs text-zinc-500 mt-0.5">{patInfo.desc}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="text-sm font-bold"
-                                style={{ color: dirInfo.color }}
-                              >
-                                {p.matched_count}/{p.required_count}
-                              </span>
-                              <span
-                                className="px-2.5 py-1 rounded-lg text-xs font-medium"
-                                style={{
-                                  backgroundColor: `${dirInfo.color}20`,
-                                  color: dirInfo.color,
-                                  borderWidth: 1,
-                                  borderColor: `${dirInfo.color}40`,
-                                }}
-                              >
-                                {p.signal}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 指标匹配详情 */}
-                          {requiredInds.length > 0 && (
-                            <div className="mt-4 rounded-lg bg-zinc-900/50 border border-zinc-800/50 overflow-hidden">
-                              <div className="px-3 py-2 border-b border-zinc-800/50">
-                                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
-                                  Required Indicators
-                                </span>
-                              </div>
-                              <div className="divide-y divide-zinc-800/30">
-                                {requiredInds.map((indId) => {
-                                  const currentState = indicatorStates[indId] || "neutral";
-                                  const requiredState = requiredStates[indId] || "neutral";
-                                  const isMatched = currentState === requiredState;
-                                  const currentCfg = STATE_CONFIG[currentState] ?? STATE_CONFIG["neutral"]!;
-                                  const requiredCfg = STATE_CONFIG[requiredState] ?? STATE_CONFIG["neutral"]!;
-                                  const reliability = INDICATOR_RELIABILITY[indId] || "";
-
-                                  return (
-                                    <div
-                                      key={indId}
-                                      className="flex items-center justify-between px-3 py-2"
-                                    >
-                                      <div className="flex items-center gap-2.5">
-                                        {isMatched ? (
-                                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                        ) : (
-                                          <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                                        )}
-                                        <span className="text-[10px] font-mono text-zinc-600 w-5">
-                                          {indId.split("_")[0]}
-                                        </span>
-                                        <span className="text-sm text-zinc-300">
-                                          {INDICATOR_NAMES[indId] || indId}
-                                        </span>
-                                        <span className="text-[10px] text-amber-500/60">
-                                          {reliability}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[10px] text-zinc-600">need:</span>
-                                          <span
-                                            className="text-[11px] font-medium"
-                                            style={{ color: requiredCfg.color }}
-                                          >
-                                            {requiredCfg.label}
-                                          </span>
-                                        </div>
-                                        <div className="text-zinc-700">|</div>
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[10px] text-zinc-600">now:</span>
-                                          <span
-                                            className="text-[11px] font-medium"
-                                            style={{ color: currentCfg.color }}
-                                          >
-                                            {currentCfg.label}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="divider" />
-
-            {/* ================================================================
-                Section 3: 指标状态热力图（保持原样）
-                ================================================================ */}
-            <div className="mb-8">
-              <h2 className="section-title">
-                <Target className="w-5 h-5 text-orange-400" />
-                L2 指标状态（20 个核心指标）
-              </h2>
-
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(INDICATOR_GROUPS).map(([groupKey, group]) => (
-                  <div
-                    key={groupKey}
-                    className="relative rounded-[14px] p-4 overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)]"
-                  >
-                    <div className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: group.color }}>
-                      <span className="font-bold text-sm">{groupKey}</span>
-                      <span className="text-zinc-500">{group.title}</span>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      {group.ids.map((indId) => {
-                        const state = indicatorStates[indId] || "neutral";
-                        const stateCfg = STATE_CONFIG[state] ?? STATE_CONFIG["neutral"]!;
-                        const StateIcon = stateCfg.icon;
-
-                        const reliability = INDICATOR_RELIABILITY[indId] || "";
-                        const etfWarning = ETF_REINTERPRET[indId];
-
-                        return (
-                          <div key={indId}>
-                            <div
-                              className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-zinc-800/30 transition-colors"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono text-zinc-600 w-6">
-                                  {indId.split("_")[0]}
-                                </span>
-                                <span className="text-sm text-zinc-300">
-                                  {INDICATOR_NAMES[indId] || indId}
-                                </span>
-                                <span className="text-[10px] text-amber-500/70" title="ETF post reliability">
-                                  {reliability}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <StateIcon
-                                  className="w-3.5 h-3.5"
-                                  style={{ color: stateCfg.color }}
-                                />
-                              <span
-                                className="text-xs font-medium min-w-[32px] text-right"
-                                style={{ color: stateCfg.color }}
-                                title={INDICATOR_THRESHOLDS[indId] || undefined}
-                              >
-                                {stateCfg.label}
-                              </span>
-                            </div>
-                          </div>
-                          {etfWarning && (
-                            <div className="ml-10 px-2 pb-1 text-[10px] text-amber-400/70 flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              {etfWarning}
-                            </div>
-                          )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {ALL_PATTERNS.map((patId) => (
+                  <PatternMatrixCard
+                    key={patId}
+                    patternId={patId}
+                    indicatorStates={indicatorStates}
+                    triggeredPatterns={patterns}
+                    seriesMap={seriesMap}
+                    thresholdsBySymbol={thresholdsBySymbol}
+                  />
                 ))}
               </div>
             </div>
@@ -735,48 +603,55 @@ export default function BtcPage() {
             <div className="divider" />
 
             {/* ================================================================
-                Section 4: 信号摘要条（降级展示）
+                Section C: L1 全指标看板（按 ★ 分级 + 数值阈值带 chart）
+                ★★★ / ★★ → BtcIndicatorChart（有 numeric 阈值就画带）
+                ★      → 状态徽章 + 反向解读说明（不画 chart）
                 ================================================================ */}
             <div className="mb-8">
-              <div className="rounded-[14px] px-5 py-4 bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{signalCfg.emoji}</span>
-                  <span
-                    className="text-base font-bold"
-                    style={{ color: signalCfg.color }}
-                  >
-                    {signal.replace("_", " ")}
-                  </span>
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h2 className="section-title !mb-0">
+                  <Target className="w-5 h-5 text-orange-400" />
+                  L1 数据层（20 个核心指标）
+                  {seriesLoading && (
+                    <span className="text-xs text-zinc-500 ml-2 font-normal">
+                      加载 series 数据...
+                    </span>
+                  )}
+                </h2>
+                <div className="text-[11px] text-zinc-500 flex items-center gap-3">
+                  <span>★★★ 核心可靠</span>
+                  <span>·</span>
+                  <span>★★ 条件可靠</span>
+                  <span>·</span>
+                  <span>★ 反向解读</span>
                 </div>
-                <div className="h-4 w-px bg-zinc-700" />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <span className="text-zinc-500">Confidence:</span>
-                  <span
-                    className="font-medium"
-                    style={{ color: CONFIDENCE_COLOR[confidence] || "#6b7280" }}
-                  >
-                    {confidence}
-                  </span>
-                </div>
-                <div className="h-4 w-px bg-zinc-700" />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <span className="text-zinc-500">指标分布:</span>
-                  <span className="text-emerald-400 font-medium">{accCount}</span>
-                  <span className="text-zinc-600">/</span>
-                  <span className="text-zinc-400 font-medium">{neuCount}</span>
-                  <span className="text-zinc-600">/</span>
-                  <span className="text-red-400 font-medium">{distCount}</span>
-                  <span className="text-zinc-600 text-xs">(累积/中性/释放)</span>
-                </div>
-                {btcOutput.action && (
-                  <>
-                    <div className="h-4 w-px bg-zinc-700" />
-                    <div className="text-sm text-zinc-400 flex-1 min-w-0">
-                      <span className="text-zinc-500">操作建议: </span>
-                      {btcOutput.action}
+              </div>
+
+              <div className="space-y-6">
+                {Object.entries(INDICATOR_GROUPS).map(([groupKey, group]) => (
+                  <div key={groupKey}>
+                    <div className="text-xs uppercase tracking-wider mb-3 flex items-center gap-2 text-zinc-400">
+                      <span className="font-bold text-sm text-zinc-300">{groupKey}</span>
+                      <span className="text-zinc-500">·</span>
+                      <span className="text-zinc-400">{group.title}</span>
+                      <span className="text-[10px] text-zinc-600 ml-1">
+                        ({group.ids.length} 个指标)
+                      </span>
                     </div>
-                  </>
-                )}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {group.ids.map((indId) => (
+                        <IndicatorRow
+                          key={indId}
+                          indId={indId}
+                          state={(indicatorStates[indId] || "neutral") as BtcIndicatorState}
+                          data={seriesMap.get(indId) || []}
+                          thresholds={thresholdsBySymbol.get(indId) ?? null}
+                          isLoading={seriesLoading}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -839,6 +714,416 @@ export default function BtcPage() {
         <div className="divider" />
         <IndicatorDictionary modules={["BTC_Price", "BTC_Flow", "BTC_Valuation", "BTC_Supply", "BTC_Derivatives"]} defaultExpanded />
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// 8 模式矩阵卡片 (L3 Pattern Card)
+// ============================================================================
+
+const PATTERN_HISTORICAL: Record<string, string> = {
+  P1_INSTITUTIONAL_ACCUMULATION: "2024 Q1 ETF 上市初期、2025 Q2 反弹初期均出现",
+  P2_ETF_DELAYED_ACCUMULATION: "2025 Q2 至今典型结构：价差持续负值但价格创新高",
+  P3_SMART_MONEY_DISTRIBUTION: "2021/11 牛市见顶、2022 崩跌前、2024/4-5 诱多",
+  P4_SQUEEZE_IGNITION: "2025/4 费率转正+ETF流入+OTC活跃形成完整升势",
+  P5_CHIP_STABILITY: "2023 Q3、2024 Q4 出现此结构后后续爬升",
+  P6_RETAIL_FOMO: "2021/11、2024/3 见顶前均出现",
+  P7_CAPITULATION_BOTTOM: "2020/3、2022/6、2022/11 底部均出现",
+  P8_STRUCTURAL_NEUTRALITY: "大多数横盘整理期均属此状态",
+};
+
+const PATTERN_SHORT_NAME: Record<string, string> = {
+  P1_INSTITUTIONAL_ACCUMULATION: "机构吸筹确认",
+  P2_ETF_DELAYED_ACCUMULATION: "ETF 延迟型吸筹",
+  P3_SMART_MONEY_DISTRIBUTION: "主力出货警戒",
+  P4_SQUEEZE_IGNITION: "杠杆引爆+接力",
+  P5_CHIP_STABILITY: "筹码稳定+蓄势",
+  P6_RETAIL_FOMO: "散户 FOMO+过热",
+  P7_CAPITULATION_BOTTOM: "投降底部",
+  P8_STRUCTURAL_NEUTRALITY: "结构中性/无共识",
+};
+
+function PatternMatrixCard({
+  patternId,
+  indicatorStates,
+  triggeredPatterns,
+  seriesMap,
+  thresholdsBySymbol,
+}: {
+  patternId: string;
+  indicatorStates: Record<string, string>;
+  triggeredPatterns: BtcPattern[];
+  seriesMap: Map<string, ChartSeriesPoint[]>;
+  thresholdsBySymbol: Map<string, BtcIndicatorChartThresholds | null>;
+}) {
+  const patInfo = PATTERN_NAMES[patternId] || { emoji: "?", desc: "" };
+  const dirInfo = PATTERN_DIRECTION[patternId] || { label: "?", color: "#6b7280" };
+  const requiredInds = PATTERN_REQUIRED_INDICATORS[patternId] || [];
+  const requiredStates = PATTERN_REQUIRED_STATES[patternId] || {};
+  const isFallback = patternId === "P8_STRUCTURAL_NEUTRALITY";
+
+  const matched = requiredInds.filter(
+    (ind) => indicatorStates[ind] === requiredStates[ind]
+  ).length;
+  const total = requiredInds.length;
+  const percentage = total > 0 ? matched / total : 0;
+  const isTriggered = !!triggeredPatterns.find((p) => p.pattern_id === patternId);
+
+  const status: "triggered" | "near" | "dormant" = isTriggered
+    ? "triggered"
+    : percentage >= 0.5
+    ? "near"
+    : "dormant";
+
+  const statusLabel = {
+    triggered: "已触发",
+    near: "接近触发",
+    dormant: "未触发",
+  }[status];
+
+  const statusColor = {
+    triggered: dirInfo.color,
+    near: "#fbbf24",
+    dormant: "#52525b",
+  }[status];
+
+  const borderColor =
+    status === "triggered"
+      ? `${dirInfo.color}55`
+      : status === "near"
+      ? "#fbbf2440"
+      : "var(--border-subtle)";
+
+  // P8 fallback 卡（无 required_states）
+  if (isFallback) {
+    return (
+      <div
+        className="relative rounded-[14px] p-5 overflow-hidden border bg-[var(--bg-card)]"
+        style={{ borderColor: isTriggered ? "#9ca3af55" : "var(--border-subtle)" }}
+      >
+        {isTriggered && (
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-zinc-400" />
+        )}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <span className="text-2xl flex-shrink-0">{patInfo.emoji}</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-zinc-600">P8</span>
+                <span className="text-base font-medium text-zinc-100">
+                  {PATTERN_SHORT_NAME[patternId]}
+                </span>
+              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">{patInfo.desc}</div>
+            </div>
+          </div>
+          <span
+            className="text-[10px] font-medium px-2 py-0.5 rounded flex-shrink-0"
+            style={{ backgroundColor: "#6b728020", color: "#9ca3af" }}
+          >
+            FALLBACK
+          </span>
+        </div>
+        <div className="rounded-lg bg-zinc-900/40 border border-zinc-800/40 p-3">
+          <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5 font-medium">
+            触发逻辑
+          </div>
+          <ul className="text-xs text-zinc-400 leading-relaxed space-y-1 ml-3 list-disc">
+            <li>其他 7 个模式均未完整触发</li>
+            <li>或多空模式同时存在并互相抵销</li>
+          </ul>
+          <div className="mt-3 pt-2 border-t border-zinc-800/40 text-xs">
+            <span className="text-zinc-500">当前状态：</span>
+            {isTriggered ? (
+              <span className="text-zinc-300 font-medium">已触发（默认观望状态）</span>
+            ) : (
+              <span className="text-zinc-500">未触发</span>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex items-start gap-2 text-[11px] text-zinc-500">
+          <span className="flex-shrink-0">📜</span>
+          <span className="leading-relaxed">{PATTERN_HISTORICAL[patternId]}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative rounded-[14px] p-5 overflow-hidden border bg-[var(--bg-card)] transition-all"
+      style={{ borderColor }}
+    >
+      {/* 顶部亮条（仅触发时） */}
+      {status === "triggered" && (
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px]"
+          style={{ backgroundColor: dirInfo.color }}
+        />
+      )}
+
+      {/* 头部：编号 + 名称 + 方向标 */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="text-2xl flex-shrink-0">{patInfo.emoji}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-zinc-600">
+                {patternId.split("_")[0]}
+              </span>
+              <span className="text-base font-medium text-zinc-100 truncate">
+                {PATTERN_SHORT_NAME[patternId] || patternId}
+              </span>
+            </div>
+            <div className="text-xs text-zinc-500 mt-0.5 line-clamp-2 leading-snug">
+              {patInfo.desc}
+            </div>
+          </div>
+        </div>
+        <span
+          className="text-[10px] font-medium px-2 py-0.5 rounded flex-shrink-0"
+          style={{ backgroundColor: `${dirInfo.color}15`, color: dirInfo.color }}
+        >
+          {dirInfo.label}
+        </span>
+      </div>
+
+      {/* 命中度 + 进度条 */}
+      <div className="mb-4">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className="text-3xl font-bold tabular-nums leading-none"
+              style={{ color: statusColor }}
+            >
+              {matched}
+            </span>
+            <span className="text-base text-zinc-500 tabular-nums">/{total}</span>
+            <span className="text-[10px] text-zinc-600 ml-1.5">
+              ({Math.round(percentage * 100)}%)
+            </span>
+          </div>
+          <span
+            className="text-[10px] font-medium px-2 py-0.5 rounded uppercase tracking-wider"
+            style={{
+              backgroundColor: `${statusColor}20`,
+              color: statusColor,
+            }}
+          >
+            {statusLabel}
+          </span>
+        </div>
+        <div className="relative h-1.5 rounded-full bg-zinc-800/60 overflow-hidden">
+          <div
+            className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${percentage * 100}%`,
+              backgroundColor: statusColor,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 触发条件列表 */}
+      <div className="rounded-lg bg-zinc-900/40 border border-zinc-800/40 overflow-hidden">
+        <div className="px-3 py-1.5 border-b border-zinc-800/40 flex items-center justify-between">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+            触发条件 ({requiredInds.length})
+          </span>
+          <span className="text-[10px] text-zinc-600">need / now</span>
+        </div>
+        <div className="divide-y divide-zinc-800/30">
+          {requiredInds.map((indId) => {
+            const currentState = indicatorStates[indId] || "neutral";
+            const requiredState = requiredStates[indId] || "neutral";
+            const isMatched = currentState === requiredState;
+            const currentCfg = STATE_CONFIG[currentState] ?? STATE_CONFIG["neutral"]!;
+            const requiredCfg = STATE_CONFIG[requiredState] ?? STATE_CONFIG["neutral"]!;
+            const reliability = INDICATOR_RELIABILITY[indId] || "";
+
+            return (
+              <div
+                key={indId}
+                className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/20 transition-colors"
+              >
+                {isMatched ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
+                )}
+                <span className="text-[10px] font-mono text-zinc-600 w-6 flex-shrink-0">
+                  {indId.split("_")[0]}
+                </span>
+                <span className="text-xs text-zinc-300 flex-1 truncate" title={INDICATOR_THRESHOLDS[indId] || ""}>
+                  {INDICATOR_NAMES[indId] || indId}
+                </span>
+                <span
+                  className="text-[9px] text-amber-500/60 flex-shrink-0"
+                  title={`reliability: ${reliability}`}
+                >
+                  {reliability}
+                </span>
+                <BtcIndicatorChart
+                  symbol={indId}
+                  data={seriesMap.get(indId) || []}
+                  thresholds={thresholdsBySymbol.get(indId) ?? null}
+                  currentState={currentState as BtcIndicatorState}
+                  size="sparkline"
+                  className="flex-shrink-0 opacity-80"
+                />
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                    style={{
+                      color: requiredCfg.color,
+                      backgroundColor: `${requiredCfg.color}10`,
+                    }}
+                  >
+                    {requiredCfg.label}
+                  </span>
+                  <span className="text-zinc-700 text-[10px] mx-0.5">/</span>
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                    style={{
+                      color: isMatched ? currentCfg.color : "#a1a1aa",
+                      backgroundColor: isMatched
+                        ? `${currentCfg.color}10`
+                        : "rgb(63 63 70 / 0.3)",
+                    }}
+                  >
+                    {currentCfg.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 历史验证 + 信号 label */}
+      <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+        <div className="flex items-start gap-1.5 text-zinc-500 flex-1 min-w-0">
+          <span className="flex-shrink-0">📜</span>
+          <span className="leading-snug truncate">{PATTERN_HISTORICAL[patternId]}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// L1 指标行组件（按 ★ 分级渲染）
+// ============================================================================
+
+function StateBadge({ state }: { state: BtcIndicatorState }) {
+  const cfg = STATE_CONFIG[state] || STATE_CONFIG["neutral"]!;
+  const Icon = cfg.icon;
+  return (
+    <div className="flex items-center gap-1 flex-shrink-0">
+      <Icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
+      <span className="text-xs font-medium" style={{ color: cfg.color }}>
+        {cfg.label}
+      </span>
+    </div>
+  );
+}
+
+function IndicatorRow({
+  indId,
+  state,
+  data,
+  thresholds,
+  isLoading,
+}: {
+  indId: string;
+  state: BtcIndicatorState;
+  data: ChartSeriesPoint[];
+  thresholds: BtcIndicatorChartThresholds | null;
+  isLoading: boolean;
+}) {
+  const reliability = INDICATOR_RELIABILITY[indId] || "";
+  const name = INDICATOR_NAMES[indId] || indId;
+  const etfWarning = ETF_REINTERPRET[indId];
+  const thresholdHint = INDICATOR_THRESHOLDS[indId];
+  const isStar = reliability === "★";
+
+  // ★ 等级（D2 / D4）：仅状态徽章 + 反向解读，不画 chart
+  if (isStar) {
+    return (
+      <div className="rounded-lg p-3 bg-zinc-900/30 border border-zinc-800/40">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] font-mono text-zinc-600 w-6 flex-shrink-0">
+              {indId.split("_")[0]}
+            </span>
+            <span
+              className="text-sm text-zinc-300 truncate"
+              title={thresholdHint || undefined}
+            >
+              {name}
+            </span>
+            <span className="text-[10px] text-amber-500/70 flex-shrink-0">{reliability}</span>
+          </div>
+          <StateBadge state={state} />
+        </div>
+        {etfWarning && (
+          <div className="text-[10px] text-amber-400/80 flex items-start gap-1 mt-1.5 leading-snug bg-amber-500/5 rounded px-2 py-1.5 border border-amber-500/15">
+            <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+            <span>{etfWarning}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ★★ / ★★★：渲染 BtcIndicatorChart（有 numeric 阈值就画带，没有就裸曲线）
+  const isCore = reliability === "★★★";
+  const hasNumericThresholds =
+    !!thresholds &&
+    (typeof thresholds.accumulation === "number" ||
+      typeof thresholds.distribution === "number");
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg p-3 bg-zinc-900/30 border transition-colors",
+        isCore ? "border-zinc-700/60" : "border-zinc-800/40"
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[10px] font-mono text-zinc-600 w-6 flex-shrink-0">
+            {indId.split("_")[0]}
+          </span>
+          <span
+            className="text-sm text-zinc-300 truncate"
+            title={thresholdHint || undefined}
+          >
+            {name}
+          </span>
+          <span className="text-[10px] text-amber-500/70 flex-shrink-0" title="reliability">
+            {reliability}
+          </span>
+        </div>
+      </div>
+      <BtcIndicatorChart
+        symbol={indId}
+        displayName={name}
+        data={data}
+        thresholds={thresholds}
+        currentState={state}
+        reliability={(reliability as "★★" | "★★★") || undefined}
+        size="expanded"
+        isLoading={isLoading}
+      />
+      {!hasNumericThresholds && data.length > 0 && (
+        <div className="text-[10px] text-zinc-500 mt-1.5 leading-snug">
+          {thresholdHint
+            ? <>判定逻辑：<span className="text-zinc-400">{thresholdHint}</span>（无固定数值阈值带）</>
+            : "按 percentile / 复合条件判定，无固定数值阈值带"}
+        </div>
+      )}
     </div>
   );
 }

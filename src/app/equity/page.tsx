@@ -85,6 +85,10 @@ const SUB_INDICATOR_LABELS: Record<string, string> = {
   // 资金流
   hyg_trend: "HYG 高收益债 ETF",
   lqd_trend: "LQD 投资级债 ETF",
+  tactical_hyg_lqd: "战术 HYG/LQD 组合",
+  margin_debt_yoy: "保证金债务 YoY",
+  tic_cross_border: "TIC 跨境资金净流入",
+  cot_asset_manager: "COT 资管净持仓",
   // 市场宽度
   rsp_spy_trend: "RSP/SPY 等权比值",
   sector_count: "板块参与度 (站上200DMA)",
@@ -92,28 +96,155 @@ const SUB_INDICATOR_LABELS: Record<string, string> = {
   vix_term_structure: "VIX 期限结构",
   vvix: "VVIX 波动率的波动率",
   vix_monthly_avg: "VIX 月均值",
+  // 情绪
+  naaim: "NAAIM 经理人持仓",
+  aaii_bear: "AAII 散户看空比例",
   // 价量
   SPX: "S&P 500",
   NDX: "Nasdaq 100",
   RUT: "Russell 2000",
 };
 
-// 格式化子指标值
-function formatSubValue(key: string, value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    if ("above" in obj && "score" in obj) {
-      const above = obj.above ? "↑ 在200DMA上方" : "↓ 在200DMA下方";
-      return `${above} → ${Number(obj.score) > 0 ? "+" : ""}${Number(obj.score).toFixed(1)}`;
-    }
-    return JSON.stringify(value);
+// 子指标数值单位声明（驱动数值格式化）
+type SubIndicatorUnit = "usd_m" | "usd_b" | "percent" | "yoy_pct" | "ratio" | "bps" | "raw";
+const SUB_INDICATOR_UNIT: Record<string, SubIndicatorUnit> = {
+  margin_debt_yoy: "yoy_pct",
+  tic_cross_border: "usd_m",
+  cot_asset_manager: "raw",
+  naaim: "raw",
+  aaii_bear: "percent",
+  fed_funds: "percent",
+  yield_curve: "bps",
+  real_rate: "percent",
+  credit_spread: "bps",
+};
+
+function formatNumberByUnit(value: number, unit?: SubIndicatorUnit): string {
+  if (unit === "yoy_pct" || unit === "percent") return `${value.toFixed(1)}%`;
+  if (unit === "bps") return `${value.toFixed(0)} bps`;
+  if (unit === "usd_m") return `$${value.toLocaleString("en", { maximumFractionDigits: 0 })}M`;
+  if (unit === "usd_b") return `$${(value / 1000).toFixed(2)}B`;
+  if (unit === "ratio") return value.toFixed(3);
+  if (Math.abs(value) >= 1000)
+    return value.toLocaleString("en", { maximumFractionDigits: 0 });
+  return value.toFixed(2);
+}
+
+function humanizeState(s: string): string {
+  const map: Record<string, string> = {
+    stable: "持平",
+    rising: "↑ 上升",
+    falling: "↓ 下跌",
+    expansion: "扩张",
+    contraction: "收缩",
+    neutral: "中性",
+    above: "上方",
+    below: "下方",
+    bullish: "看多",
+    bearish: "看空",
+  };
+  return map[s] || s;
+}
+
+interface ParsedSubValue {
+  primary: string;
+  secondary?: string;
+  score?: number;
+}
+
+function parseSubValue(key: string, value: unknown): ParsedSubValue {
+  const unit = SUB_INDICATOR_UNIT[key];
+  if (value === null || value === undefined) return { primary: "—" };
+  if (typeof value === "number") return { primary: formatNumberByUnit(value, unit) };
+  if (typeof value === "string") return { primary: humanizeState(value) };
+  if (typeof value === "boolean") return { primary: value ? "✓" : "✗" };
+  if (typeof value !== "object") return { primary: String(value) };
+
+  const obj = value as Record<string, unknown>;
+  const score = typeof obj.score === "number" ? obj.score : undefined;
+
+  // {hyg, lqd, score} — 双 ETF 状态
+  if ("hyg" in obj && "lqd" in obj) {
+    return {
+      primary: `HYG ${humanizeState(String(obj.hyg))} · LQD ${humanizeState(String(obj.lqd))}`,
+      score,
+    };
   }
-  if (typeof value === "number") return value.toFixed(2);
-  if (value === "rising") return "↑ 上升";
-  if (value === "falling") return "↓ 下跌";
-  if (value === "stable") return "→ 持平";
-  return String(value);
+  // {above: bool, score} — 200DMA 位置
+  if ("above" in obj && typeof obj.above === "boolean") {
+    return {
+      primary: obj.above ? "↑ 200DMA 上方" : "↓ 200DMA 下方",
+      score,
+    };
+  }
+  // {value: number, score} — 通用单值结构
+  if (typeof obj.value === "number") {
+    return {
+      primary: formatNumberByUnit(obj.value, unit),
+      score,
+    };
+  }
+  // {vote, naaim} — sentiment factor
+  if ("vote" in obj && typeof obj.naaim === "number") {
+    return {
+      primary: `NAAIM ${obj.naaim.toFixed(0)}`,
+      secondary: `vote: ${String(obj.vote)}`,
+      score,
+    };
+  }
+
+  // 兜底：紧凑列出非 score 字段
+  const flat = Object.entries(obj)
+    .filter(([k2]) => k2 !== "score")
+    .map(([k2, v]) => `${k2}: ${typeof v === "object" ? "…" : String(v).slice(0, 16)}`)
+    .join(" · ");
+  return { primary: flat || "—", score };
+}
+
+function SubIndicatorRow({ k, value }: { k: string; value: unknown }) {
+  const label = SUB_INDICATOR_LABELS[k] || k;
+  const parsed = parseSubValue(k, value);
+  const hasScore = parsed.score !== undefined;
+  const score = parsed.score ?? 0;
+  const scoreColor =
+    !hasScore || score === 0 ? "#71717a" : score > 0 ? "#10b981" : "#ef4444";
+
+  return (
+    <div className="text-xs">
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <span className="text-zinc-500 truncate">{label}</span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="font-mono text-zinc-300 text-right">{parsed.primary}</span>
+          {hasScore && (
+            <span
+              className="font-mono font-medium tabular-nums w-9 text-right text-[11px]"
+              style={{ color: scoreColor }}
+            >
+              {score > 0 ? "+" : ""}
+              {score.toFixed(1)}
+            </span>
+          )}
+        </div>
+      </div>
+      {parsed.secondary && (
+        <div className="text-[10px] text-zinc-600 mb-1 ml-1">{parsed.secondary}</div>
+      )}
+      {hasScore && (
+        <div className="relative h-1 rounded-full bg-zinc-800/60 overflow-hidden">
+          <div
+            className="absolute top-0 h-full rounded-full transition-all duration-500"
+            style={{
+              backgroundColor: scoreColor,
+              left: "50%",
+              width: `${Math.min(Math.abs(score), 2) * 25}%`,
+              transform: score < 0 ? "translateX(-100%)" : "none",
+            }}
+          />
+          <div className="absolute top-0 left-1/2 w-px h-full bg-zinc-700/60" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ============================================================================
@@ -518,20 +649,10 @@ export default function EquityPage() {
 
                         {/* 展开：子指标详情 */}
                         {isExpanded && hasSubData && (
-                          <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] space-y-2">
-                            {Object.entries(subInputs).map(([key, value]) => {
-                              const label = SUB_INDICATOR_LABELS[key] || key;
-                              const displayValue = formatSubValue(key, value);
-
-                              return (
-                                <div key={key} className="flex items-center justify-between text-xs">
-                                  <span className="text-zinc-500">{label}</span>
-                                  <span className="font-mono text-zinc-300">
-                                    {displayValue}
-                                  </span>
-                                </div>
-                              );
-                            })}
+                          <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
+                            {Object.entries(subInputs).map(([key, value]) => (
+                              <SubIndicatorRow key={key} k={key} value={value} />
+                            ))}
                           </div>
                         )}
                       </div>
