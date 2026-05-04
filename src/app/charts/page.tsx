@@ -181,7 +181,13 @@ export default function ChartsPage() {
 
   const loadPreset = useCallback((preset: ChartPreset) => {
     setState((prev) =>
-      presetToWorkspace(preset, prev.range, prev.asOf, prev.enabledEventTypes),
+      presetToWorkspace(
+        preset,
+        prev.range,
+        prev.asOf,
+        prev.enabledEventTypes,
+        prev.ratioMode,
+      ),
     );
   }, []);
 
@@ -202,6 +208,11 @@ export default function ChartsPage() {
 
   const setEnabledEventTypes = useCallback(
     (next: string[]) => setState((s) => ({ ...s, enabledEventTypes: next })),
+    [],
+  );
+
+  const toggleRatioMode = useCallback(
+    () => setState((s) => ({ ...s, ratioMode: !s.ratioMode })),
     [],
   );
 
@@ -345,11 +356,13 @@ export default function ChartsPage() {
             eventTypes={catalog.event_types}
             enabledEventTypes={state.enabledEventTypes}
             defaultEventTypes={DEFAULT_ENABLED_EVENT_TYPES}
+            ratioMode={state.ratioMode}
             onLoadPreset={loadPreset}
             onRangeChange={setRange}
             onTransformChange={setTransform}
             onAsOfChange={setAsOf}
             onEventTypesChange={setEnabledEventTypes}
+            onToggleRatioMode={toggleRatioMode}
             onAddPane={addPane}
             onReset={reset}
             onCopyUrl={copyUrl}
@@ -377,6 +390,7 @@ export default function ChartsPage() {
               series={series}
               events={eventsForOverlay}
               missingSymbols={missingSymbols}
+              ratioMode={state.ratioMode}
               onRemoveSeries={(sym) => removeSeries(pane.id, sym)}
               onAddIndicator={() => openSearchFor(pane.id)}
               onDeletePane={() => deletePane(pane.id)}

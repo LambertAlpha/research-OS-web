@@ -51,6 +51,9 @@ export interface WorkspaceState {
   asOf: string | null; // YYYY-MM-DD or null（最新 vintage）
   // 选中的事件类型 ID 列表；空数组 = 不显示任何 markers
   enabledEventTypes: string[];
+  // Ratio Mode：每个 pane 的所有 series 除以该 pane 第一个 series 的同 ts 值
+  // 用于看跨 series 的相对比率（如 BTC / Realized Price）；first series 自身变成 y=1 基准
+  ratioMode: boolean;
 }
 
 let _idCounter = 0;
@@ -75,6 +78,7 @@ export const DEFAULT_WORKSPACE: WorkspaceState = {
   transform: "none",
   asOf: null,
   enabledEventTypes: [...DEFAULT_ENABLED_EVENT_TYPES],
+  ratioMode: false,
 };
 
 export function rangeToDays(range: TimeRangePreset): number {
@@ -111,6 +115,7 @@ export function presetToWorkspace(
   carryRange?: TimeRangePreset,
   carryAsOf: string | null = null,
   carryEventTypes: string[] = [...DEFAULT_ENABLED_EVENT_TYPES],
+  carryRatioMode: boolean = false,
 ): WorkspaceState {
   return {
     panes: preset.panes.map((p) => newPane(p.title, [...p.indicators])),
@@ -118,6 +123,7 @@ export function presetToWorkspace(
     transform: "none",
     asOf: carryAsOf,
     enabledEventTypes: carryEventTypes,
+    ratioMode: carryRatioMode,
   };
 }
 
@@ -135,6 +141,8 @@ interface CompactState {
   et?: string[];
   // M4 兼容字段（旧 URL 中的 boolean）
   e?: boolean | string[];
+  // M7+: Ratio Mode
+  rm?: boolean;
 }
 
 function utf8ToBase64(s: string): string {
@@ -160,6 +168,7 @@ export function encodeWorkspace(state: WorkspaceState): string {
     x: state.transform,
     a: state.asOf,
     et: state.enabledEventTypes,
+    rm: state.ratioMode || undefined, // 仅在 true 时序列化，缩短 URL
   };
   return utf8ToBase64(JSON.stringify(compact));
 }
@@ -212,6 +221,7 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
       transform: compact.x ?? "none",
       asOf: compact.a ?? null,
       enabledEventTypes,
+      ratioMode: compact.rm === true,
     };
   } catch {
     return null;

@@ -40,6 +40,53 @@ interface ChartPaneProps {
   events?: ChartEvent[];
   axisOverrides?: Record<string, "left" | "right">;
   height?: number;
+  // Ratio Mode：所有 series 除以第一个 series 的同 ts 值，看跨 series 比率
+  ratioMode?: boolean;
+}
+
+// 把 series 列表转换成 ratio mode 数据：
+// - 第一个 series（base）所有点变成 1.0
+// - 其他 series 按 ts (slice 0,10) 对齐查 base value，相除；找不到 base 时 value 设 null
+function applyRatioMode(seriesList: ChartSeries[]): ChartSeries[] {
+  if (seriesList.length === 0) return seriesList;
+  const base = seriesList[0]!;
+  const baseLookup = new Map<string, number>();
+  for (const p of base.points) {
+    if (
+      p.value !== null &&
+      Number.isFinite(p.value) &&
+      (p.value as number) !== 0
+    ) {
+      const date = p.ts.slice(0, 10);
+      baseLookup.set(date, p.value as number);
+    }
+  }
+  return seriesList.map((s, idx) => {
+    if (idx === 0) {
+      return {
+        ...s,
+        points: s.points.map((p) => ({
+          ...p,
+          value: p.value === null ? null : 1,
+        })),
+      };
+    }
+    return {
+      ...s,
+      points: s.points.map((p) => {
+        const date = p.ts.slice(0, 10);
+        const baseV = baseLookup.get(date);
+        if (
+          p.value === null ||
+          baseV === undefined ||
+          !Number.isFinite(p.value)
+        ) {
+          return { ...p, value: null };
+        }
+        return { ...p, value: (p.value as number) / baseV };
+      }),
+    };
+  });
 }
 
 // 把 series 按数据量级聚类成 left/right 两组
@@ -192,11 +239,14 @@ function buildTooltipHtml(date: string, events: ChartEvent[]): string {
 }
 
 export function ChartPane({
-  series,
+  series: rawSeries,
   events,
   axisOverrides,
   height = 300,
+  ratioMode = false,
 }: ChartPaneProps) {
+  // Ratio mode 在装载前预处理（保持 prop 不可变 + 避免下游 useEffect 误判）
+  const series = ratioMode ? applyRatioMode(rawSeries) : rawSeries;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRefs = useRef<ISeriesApi<"Line">[]>([]);
