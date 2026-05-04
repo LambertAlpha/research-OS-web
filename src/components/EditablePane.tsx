@@ -13,8 +13,14 @@
 
 import { X, Plus, Trash2 } from "lucide-react";
 import { ChartPane } from "./ChartPane";
+import { PriceLineManager } from "./PriceLineManager";
 import type { ChartEvent, ChartSeries } from "@/types/api";
-import { rangeToDays, type TimeRangePreset, type WorkspacePane } from "@/lib/workspace-state";
+import {
+  rangeToDays,
+  type PriceLine,
+  type TimeRangePreset,
+  type WorkspacePane,
+} from "@/lib/workspace-state";
 import { getSeriesColor } from "@/lib/chart-theme";
 
 const PANE_TIMERANGE_OPTIONS: { value: TimeRangePreset | ""; label: string }[] = [
@@ -47,6 +53,12 @@ interface EditablePaneProps {
     axis: "left" | "right" | null,
   ) => void;
   onSetPaneTimeRange?: (range: TimeRangePreset | null) => void;
+  onAddPriceLine?: (
+    value: number,
+    label: string,
+    color: PriceLine["color"],
+  ) => void;
+  onRemovePriceLine?: (id: string) => void;
 }
 
 // chip 上的轴状态循环：null (Auto) → left → right → null
@@ -85,6 +97,8 @@ export function EditablePane({
   onDeletePane,
   onSetAxisOverride,
   onSetPaneTimeRange,
+  onAddPriceLine,
+  onRemovePriceLine,
 }: EditablePaneProps) {
   // axis toggle 仅对多 series 且存在数据的 pane 有意义
   const showAxisToggle = series.length >= 2 && onSetAxisOverride !== undefined;
@@ -128,6 +142,13 @@ export function EditablePane({
                 );
               })}
             </select>
+          )}
+          {onAddPriceLine && onRemovePriceLine && (
+            <PriceLineManager
+              lines={pane.priceLines ?? []}
+              onAdd={onAddPriceLine}
+              onRemove={onRemovePriceLine}
+            />
           )}
           <button
             onClick={onAddIndicator}
@@ -229,6 +250,7 @@ export function EditablePane({
           ratioMode={ratioMode}
           visibleStart={visibleStart}
           visibleEnd={visibleEnd}
+          priceLines={pane.priceLines}
         />
       ) : (
         <div className="rounded-[10px] border border-dashed border-[var(--border-subtle)] bg-[var(--bg-inset)] py-12 text-center text-sm text-[var(--text-muted)]">
