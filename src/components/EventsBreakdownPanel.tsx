@@ -108,9 +108,11 @@ export function EventsBreakdownPanel({
             <li key={typeId}>
               <button
                 onClick={() => toggle(typeId)}
+                aria-expanded={isExpanded}
                 className="flex w-full items-center gap-2 py-1.5 text-left hover:bg-[var(--bg-card-hover)] -mx-3 px-3"
               >
                 <ChevronRight
+                  aria-hidden="true"
                   className={
                     "h-3 w-3 shrink-0 text-[var(--text-faint)] transition-transform " +
                     (isExpanded ? "rotate-90" : "")
@@ -134,15 +136,18 @@ export function EventsBreakdownPanel({
                 </span>
               </button>
               {isExpanded && (
-                <ul className="space-y-1 px-9 pb-2 pt-1">
+                <ul className="max-h-96 space-y-1 overflow-y-auto px-9 pb-2 pt-1">
                   {[...evs]
                     .sort((a, b) => b.ts.localeCompare(a.ts))
                     .slice(0, 50) // 上限 50 条避免长得离谱
-                    .map((e, i) => {
+                    .map((e) => {
                       const evColor = SEVERITY_COLOR[e.severity] ?? color;
+                      // review-driven：用稳定组合 key 而非数组 index
+                      // 防止排序后 React 复用错位
+                      const stableKey = `${typeId}-${e.ts}-${e.label}`;
                       return (
                         <li
-                          key={i}
+                          key={stableKey}
                           className="flex items-baseline gap-2 text-[11px]"
                         >
                           <span
