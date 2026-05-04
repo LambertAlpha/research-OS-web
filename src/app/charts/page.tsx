@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { ChartsToolbar } from "@/components/ChartsToolbar";
 import { EditablePane } from "@/components/EditablePane";
+import { EventsBreakdownPanel } from "@/components/EventsBreakdownPanel";
 import { IndicatorSearchModal } from "@/components/IndicatorSearchModal";
 import type {
   ChartCatalogResponse,
@@ -512,36 +513,16 @@ export default function ChartsPage() {
           )}
         </div>
 
-        {/* events 摘要：当前区间事件总数 + 各类型分布 */}
+        {/* events 摘要：可展开列表 + 颜色 legend，让用户能"对照图上 markers 查含义" */}
         {state.enabledEventTypes.length > 0 &&
           eventsData &&
-          eventsData.events.length > 0 && (
-          <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3 text-xs">
-            <div className="mb-2 flex items-center gap-2 text-[var(--text-secondary)]">
-              <span className="font-medium">当前区间事件标记</span>
-              <span className="text-[var(--text-faint)]">
-                · 共 {eventsData.events.length} 条
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(
-                eventsData.events.reduce<Record<string, number>>((acc, e) => {
-                  acc[e.type] = (acc[e.type] ?? 0) + 1;
-                  return acc;
-                }, {}),
-              )
-                .sort(([, a], [, b]) => b - a)
-                .map(([type, count]) => (
-                  <span
-                    key={type}
-                    className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-inset)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]"
-                  >
-                    {type}: {count}
-                  </span>
-                ))}
-            </div>
-          </div>
-        )}
+          eventsData.events.length > 0 &&
+          catalog && (
+            <EventsBreakdownPanel
+              events={eventsData.events}
+              eventTypes={catalog.event_types}
+            />
+          )}
 
         {/* warnings panel */}
         {seriesData && seriesData.warnings.length > 0 && (
