@@ -32,6 +32,7 @@ import {
   decodeWorkspace,
   encodeWorkspace,
   newPane,
+  newCustomMarker,
   presetToWorkspace,
   rangeToDays,
   type ChartTransform,
@@ -187,6 +188,7 @@ export default function ChartsPage() {
         prev.asOf,
         prev.enabledEventTypes,
         prev.ratioMode,
+        prev.customMarkers,
       ),
     );
   }, []);
@@ -213,6 +215,30 @@ export default function ChartsPage() {
 
   const toggleRatioMode = useCallback(
     () => setState((s) => ({ ...s, ratioMode: !s.ratioMode })),
+    [],
+  );
+
+  const addCustomMarker = useCallback(
+    (
+      ts: string,
+      label: string,
+      severity: "info" | "warning" | "critical",
+    ) => {
+      setState((s) => ({
+        ...s,
+        customMarkers: [...s.customMarkers, newCustomMarker(ts, label, severity)],
+      }));
+    },
+    [],
+  );
+
+  const removeCustomMarker = useCallback(
+    (id: string) => {
+      setState((s) => ({
+        ...s,
+        customMarkers: s.customMarkers.filter((m) => m.id !== id),
+      }));
+    },
     [],
   );
 
@@ -357,12 +383,15 @@ export default function ChartsPage() {
             enabledEventTypes={state.enabledEventTypes}
             defaultEventTypes={DEFAULT_ENABLED_EVENT_TYPES}
             ratioMode={state.ratioMode}
+            customMarkers={state.customMarkers}
             onLoadPreset={loadPreset}
             onRangeChange={setRange}
             onTransformChange={setTransform}
             onAsOfChange={setAsOf}
             onEventTypesChange={setEnabledEventTypes}
             onToggleRatioMode={toggleRatioMode}
+            onAddCustomMarker={addCustomMarker}
+            onRemoveCustomMarker={removeCustomMarker}
             onAddPane={addPane}
             onReset={reset}
             onCopyUrl={copyUrl}
@@ -389,6 +418,7 @@ export default function ChartsPage() {
               pane={pane}
               series={series}
               events={eventsForOverlay}
+              customMarkers={state.customMarkers}
               missingSymbols={missingSymbols}
               ratioMode={state.ratioMode}
               onRemoveSeries={(sym) => removeSeries(pane.id, sym)}

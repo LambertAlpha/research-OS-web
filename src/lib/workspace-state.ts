@@ -44,6 +44,29 @@ export const DEFAULT_ENABLED_EVENT_TYPES: string[] = [
   "btc_pattern_triggered",
 ];
 
+// 用户自定义事件 marker（标注政策日 / 自己的买卖点 / 重要事件）
+// 区别于后端 events 端点的「模型推理事件」：customMarker 是用户私有标注，存在
+// workspace state，跟随 URL 序列化分享
+export interface CustomMarker {
+  id: string;
+  ts: string; // YYYY-MM-DD
+  label: string;
+  severity: "info" | "warning" | "critical";
+}
+
+let _markerIdCounter = 0;
+export function newCustomMarker(
+  ts: string,
+  label: string,
+  severity: CustomMarker["severity"] = "info",
+): CustomMarker {
+  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+    return { id: window.crypto.randomUUID(), ts, label, severity };
+  }
+  _markerIdCounter += 1;
+  return { id: `mk-${Date.now()}-${_markerIdCounter}`, ts, label, severity };
+}
+
 export interface WorkspaceState {
   panes: WorkspacePane[];
   range: TimeRangePreset;
@@ -54,6 +77,8 @@ export interface WorkspaceState {
   // Ratio Mode：每个 pane 的所有 series 除以该 pane 第一个 series 的同 ts 值
   // 用于看跨 series 的相对比率（如 BTC / Realized Price）；first series 自身变成 y=1 基准
   ratioMode: boolean;
+  // 用户自定义事件 marker（全局 — 在所有 pane 都显示）
+  customMarkers: CustomMarker[];
 }
 
 let _idCounter = 0;
@@ -79,6 +104,7 @@ export const DEFAULT_WORKSPACE: WorkspaceState = {
   asOf: null,
   enabledEventTypes: [...DEFAULT_ENABLED_EVENT_TYPES],
   ratioMode: false,
+  customMarkers: [],
 };
 
 export function rangeToDays(range: TimeRangePreset): number {
@@ -116,6 +142,7 @@ export function presetToWorkspace(
   carryAsOf: string | null = null,
   carryEventTypes: string[] = [...DEFAULT_ENABLED_EVENT_TYPES],
   carryRatioMode: boolean = false,
+  carryCustomMarkers: CustomMarker[] = [],
 ): WorkspaceState {
   return {
     panes: preset.panes.map((p) => newPane(p.title, [...p.indicators])),
@@ -124,6 +151,7 @@ export function presetToWorkspace(
     asOf: carryAsOf,
     enabledEventTypes: carryEventTypes,
     ratioMode: carryRatioMode,
+    customMarkers: carryCustomMarkers,
   };
 }
 
@@ -143,6 +171,8 @@ interface CompactState {
   e?: boolean | string[];
   // M7+: Ratio Mode
   rm?: boolean;
+  // M7+: Custom Markers（用户自定义事件标注）
+  cm?: { t: string; l: string; s?: "info" | "warning" | "critical" }[];
 }
 
 function utf8ToBase64(s: string): string {
@@ -169,6 +199,14 @@ export function encodeWorkspace(state: WorkspaceState): string {
     a: state.asOf,
     et: state.enabledEventTypes,
     rm: state.ratioMode || undefined, // 仅在 true 时序列化，缩短 URL
+    cm:
+      state.customMarkers.length > 0
+        ? state.customMarkers.map((m) => ({
+            t: m.ts,
+            l: m.label,
+            s: m.severity === "info" ? undefined : m.severity, // info 是默认，省略
+          }))
+        : undefined,
   };
   return utf8ToBase64(JSON.stringify(compact));
 }
@@ -222,6 +260,13 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
       asOf: compact.a ?? null,
       enabledEventTypes,
       ratioMode: compact.rm === true,
+      customMarkers: Array.isArray(compact.cm)
+        ? compact.cm
+            .filter(
+              (m) => m && typeof m.t === "string" && typeof m.l === "string",
+            )
+            .map((m) => newCustomMarker(m.t, m.l, m.s ?? "info"))
+        : [],
     };
   } catch {
     return null;

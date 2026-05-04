@@ -14,6 +14,8 @@ import {
   type ChartTransform,
 } from "@/lib/workspace-state";
 import { EventsSelector } from "./EventsSelector";
+import { CustomMarkersManager } from "./CustomMarkersManager";
+import type { CustomMarker } from "@/lib/workspace-state";
 
 interface ChartsToolbarProps {
   presets: ChartPreset[];
@@ -24,12 +26,19 @@ interface ChartsToolbarProps {
   enabledEventTypes: string[];
   defaultEventTypes: string[];
   ratioMode: boolean;
+  customMarkers: CustomMarker[];
   onLoadPreset: (preset: ChartPreset) => void;
   onRangeChange: (r: TimeRangePreset) => void;
   onTransformChange: (t: ChartTransform) => void;
   onAsOfChange: (asOf: string | null) => void;
   onEventTypesChange: (next: string[]) => void;
   onToggleRatioMode: () => void;
+  onAddCustomMarker: (
+    ts: string,
+    label: string,
+    severity: CustomMarker["severity"],
+  ) => void;
+  onRemoveCustomMarker: (id: string) => void;
   onAddPane: () => void;
   onReset: () => void;
   onCopyUrl: () => void;
@@ -51,11 +60,14 @@ export function ChartsToolbar({
   enabledEventTypes,
   defaultEventTypes,
   ratioMode,
+  customMarkers,
   onLoadPreset,
   onRangeChange,
   onTransformChange,
   onAsOfChange,
   onEventTypesChange,
+  onAddCustomMarker,
+  onRemoveCustomMarker,
   onToggleRatioMode,
   onAddPane,
   onReset,
@@ -186,6 +198,13 @@ export function ChartsToolbar({
             <Divide className="h-3 w-3" />
             比率
           </button>
+
+          {/* Custom markers manager — popover */}
+          <CustomMarkersManager
+            markers={customMarkers}
+            onAdd={onAddCustomMarker}
+            onRemove={onRemoveCustomMarker}
+          />
         </div>
 
         <div className="flex items-center gap-2">

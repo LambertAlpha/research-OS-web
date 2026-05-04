@@ -23,6 +23,7 @@ interface EditablePaneProps {
   events?: ChartEvent[];
   missingSymbols: string[];
   ratioMode?: boolean;
+  customMarkers?: { id: string; ts: string; label: string; severity: "info" | "warning" | "critical" }[];
   onRemoveSeries: (symbol: string) => void;
   onAddIndicator: () => void;
   onDeletePane: () => void;
@@ -59,6 +60,7 @@ export function EditablePane({
   events,
   missingSymbols,
   ratioMode = false,
+  customMarkers,
   onRemoveSeries,
   onAddIndicator,
   onDeletePane,
@@ -169,6 +171,7 @@ export function EditablePane({
         <ChartPane
           series={series}
           events={events}
+          customMarkers={customMarkers}
           axisOverrides={pane.axisOverrides}
           height={300}
           ratioMode={ratioMode}
