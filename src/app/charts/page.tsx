@@ -43,14 +43,13 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function loadInitialState(): WorkspaceState {
-  if (typeof window === "undefined") return DEFAULT_WORKSPACE;
+// SSR 安全：初始 state 在服务端永远走 DEFAULT_WORKSPACE，客户端 mount 后
+// 用 useEffect 从 URL 加载（避免 hydration mismatch）
+function readUrlWorkspace(): WorkspaceState | null {
+  if (typeof window === "undefined") return null;
   const w = new URLSearchParams(window.location.search).get("w");
-  if (w) {
-    const parsed = decodeWorkspace(w);
-    if (parsed) return parsed;
-  }
-  return DEFAULT_WORKSPACE;
+  if (!w) return null;
+  return decodeWorkspace(w);
 }
 
 export default function ChartsPage() {
@@ -64,12 +63,19 @@ export default function ChartsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [state, setState] = useState<WorkspaceState>(loadInitialState);
+  // SSR 安全：服务端 = DEFAULT_WORKSPACE，客户端 mount 后从 URL 加载（见下方 useEffect）
+  const [state, setState] = useState<WorkspaceState>(DEFAULT_WORKSPACE);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTargetPaneId, setSearchTargetPaneId] = useState<string | null>(
     null,
   );
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+
+  // 客户端 mount 后从 URL 加载 workspace（避免 SSR hydration mismatch）
+  useEffect(() => {
+    const fromUrl = readUrlWorkspace();
+    if (fromUrl) setState(fromUrl);
+  }, []);
 
   // sync URL with state (no history pollution)
   useEffect(() => {
