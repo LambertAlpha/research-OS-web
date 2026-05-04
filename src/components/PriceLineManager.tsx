@@ -58,6 +58,7 @@ export function PriceLineManager({ lines, onAdd, onRemove }: PriceLineManagerPro
     onAdd(value, trimmedLabel, color);
     setValueStr("");
     setLabel("");
+    setColor("purple"); // review-driven：reset color 避免下条 line 误用上次选择
   };
 
   return (
