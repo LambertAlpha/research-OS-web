@@ -17,7 +17,7 @@
  */
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   createChart,
   createSeriesMarkers,
@@ -270,12 +270,16 @@ export function ChartPane({
   // Ratio mode 在装载前预处理（保持 prop 不可变 + 避免下游 useEffect 误判）
   const series = ratioMode ? applyRatioMode(rawSeries) : rawSeries;
   // 把用户自定义 markers 跟模型事件合并（前端无差别渲染）
-  const allEvents: ChartEvent[] = [
-    ...(events ?? []),
-    ...(customMarkers && customMarkers.length > 0
-      ? customMarkersToEvents(customMarkers)
-      : []),
-  ];
+  // review-driven：useMemo 避免每次 render 都建新数组触发 markers 反复重建
+  const allEvents: ChartEvent[] = useMemo(
+    () => [
+      ...(events ?? []),
+      ...(customMarkers && customMarkers.length > 0
+        ? customMarkersToEvents(customMarkers)
+        : []),
+    ],
+    [events, customMarkers],
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRefs = useRef<ISeriesApi<"Line">[]>([]);

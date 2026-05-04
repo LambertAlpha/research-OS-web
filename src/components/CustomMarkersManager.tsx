@@ -46,8 +46,16 @@ export function CustomMarkersManager({
         setOpen(false);
       }
     };
+    // review-driven：底部文案承诺 ESC 关闭，需补 keydown 监听
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const handleAdd = () => {
