@@ -33,6 +33,8 @@ import {
   encodeWorkspace,
   newPane,
   newCustomMarker,
+  newPriceLine,
+  type PriceLine,
   presetToWorkspace,
   rangeToDays,
   type ChartTransform,
@@ -305,6 +307,45 @@ export default function ChartsPage() {
     [],
   );
 
+  const addPaneLine = useCallback(
+    (
+      paneId: string,
+      value: number,
+      label: string,
+      color: PriceLine["color"],
+    ) => {
+      setState((s) => ({
+        ...s,
+        panes: s.panes.map((p) =>
+          p.id === paneId
+            ? {
+                ...p,
+                priceLines: [
+                  ...(p.priceLines ?? []),
+                  newPriceLine(value, label, color),
+                ],
+              }
+            : p,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const removePaneLine = useCallback((paneId: string, lineId: string) => {
+    setState((s) => ({
+      ...s,
+      panes: s.panes.map((p) =>
+        p.id === paneId
+          ? {
+              ...p,
+              priceLines: (p.priceLines ?? []).filter((l) => l.id !== lineId),
+            }
+          : p,
+      ),
+    }));
+  }, []);
+
   const openSearchFor = useCallback((paneId: string) => {
     setSearchTargetPaneId(paneId);
     setSearchOpen(true);
@@ -457,6 +498,10 @@ export default function ChartsPage() {
               onSetPaneTimeRange={(range) =>
                 setPaneTimeRange(pane.id, range)
               }
+              onAddPriceLine={(value, label, color) =>
+                addPaneLine(pane.id, value, label, color)
+              }
+              onRemovePriceLine={(lineId) => removePaneLine(pane.id, lineId)}
             />
           ))}
 

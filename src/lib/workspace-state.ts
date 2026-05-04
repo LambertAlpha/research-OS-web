@@ -27,6 +27,15 @@ export const TIME_RANGE_PRESETS: { id: TimeRangePreset; label: string }[] = [
 
 export type ChartTransform = "none" | "normalize" | "pct_change";
 
+// M7+: 价格线（横向 priceLine）— 标记支撑/阻力位
+// 用 lightweight-charts 内置 createPriceLine；attach 到 pane 第一个 series
+export interface PriceLine {
+  id: string;
+  value: number;
+  label: string;
+  color: "purple" | "green" | "amber" | "red" | "blue";
+}
+
 export interface WorkspacePane {
   id: string;
   title: string;
@@ -38,7 +47,30 @@ export interface WorkspacePane {
   // 由 lightweight-charts setVisibleRange zoom 到该区间）。
   // 约束：仅能 zoom in（pane.timeRange <= state.range），更大范围请调全局。
   timeRange?: TimeRangePreset;
+  // M7+: 价格线（横向支撑/阻力位）
+  priceLines?: PriceLine[];
 }
+
+let _priceLineIdCounter = 0;
+export function newPriceLine(
+  value: number,
+  label: string,
+  color: PriceLine["color"] = "purple",
+): PriceLine {
+  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+    return { id: window.crypto.randomUUID(), value, label, color };
+  }
+  _priceLineIdCounter += 1;
+  return { id: `pl-${Date.now()}-${_priceLineIdCounter}`, value, label, color };
+}
+
+export const PRICE_LINE_COLOR_HEX: Record<PriceLine["color"], string> = {
+  purple: "#a855f7",
+  green: "#22c55e",
+  amber: "#eab308",
+  red: "#ef4444",
+  blue: "#3b82f6",
+};
 
 // 推荐默认勾选的事件类型（覆盖核心模型决策事件，不含 rule_triggered/alert 噪音）
 export const DEFAULT_ENABLED_EVENT_TYPES: string[] = [
@@ -171,6 +203,7 @@ interface CompactState {
     s: string[];
     o?: Record<string, "left" | "right">;
     tr?: TimeRangePreset;
+    pl?: { v: number; l: string; c?: PriceLine["color"] }[];
   }[];
   r: TimeRangePreset;
   x: ChartTransform;
@@ -204,6 +237,13 @@ export function encodeWorkspace(state: WorkspaceState): string {
       }
       if (p.timeRange) {
         entry.tr = p.timeRange;
+      }
+      if (p.priceLines && p.priceLines.length > 0) {
+        entry.pl = p.priceLines.map((line) => ({
+          v: line.value,
+          l: line.label,
+          c: line.color === "purple" ? undefined : line.color, // purple 默认省略
+        }));
       }
       return entry;
     }),
@@ -276,6 +316,17 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
           p.tr === "ALL"
         ) {
           pane.timeRange = p.tr;
+        }
+        if (Array.isArray(p.pl)) {
+          pane.priceLines = p.pl
+            .filter(
+              (line) =>
+                line &&
+                typeof line.v === "number" &&
+                Number.isFinite(line.v) &&
+                typeof line.l === "string",
+            )
+            .map((line) => newPriceLine(line.v, line.l, line.c ?? "purple"));
         }
         return pane;
       }),

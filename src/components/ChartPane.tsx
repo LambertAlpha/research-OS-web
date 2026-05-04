@@ -22,7 +22,9 @@ import {
   createChart,
   createSeriesMarkers,
   LineSeries,
+  LineStyle,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   type ISeriesMarkersPluginApi,
   type MouseEventParams,
@@ -30,6 +32,7 @@ import {
   type Time,
 } from "lightweight-charts";
 import type { ChartSeries, ChartEvent } from "@/types/api";
+import { PRICE_LINE_COLOR_HEX, type PriceLine } from "@/lib/workspace-state";
 import {
   CLINICAL_DARK_CHART_OPTIONS,
   getLineSeriesOptions,
@@ -48,6 +51,8 @@ interface ChartPaneProps {
   // chart.timeScale().setVisibleRange 把图 zoom 到该子区间，fetch 区间不变
   visibleStart?: string;
   visibleEnd?: string;
+  // 价格线（横向 priceLine）— 标支撑/阻力位
+  priceLines?: PriceLine[];
 }
 
 // 把 customMarker 转成 ChartEvent shape，复用 markers / tooltip 渲染路径
@@ -272,6 +277,7 @@ export function ChartPane({
   ratioMode = false,
   visibleStart,
   visibleEnd,
+  priceLines,
 }: ChartPaneProps) {
   // Ratio mode 在装载前预处理（保持 prop 不可变 + 避免下游 useEffect 误判）
   const series = ratioMode ? applyRatioMode(rawSeries) : rawSeries;
@@ -290,6 +296,7 @@ export function ChartPane({
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRefs = useRef<ISeriesApi<"Line">[]>([]);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const priceLineRefs = useRef<IPriceLine[]>([]);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const eventsRef = useRef<ChartEvent[]>([]);
 
@@ -473,6 +480,42 @@ export function ChartPane({
       markersPluginRef.current = createSeriesMarkers(firstSeries, markers);
     }
   }, [allEvents, series]);
+
+  // 4. priceLines（横向支撑/阻力位）— attach 到第一个 series
+  useEffect(() => {
+    const firstSeries = seriesRefs.current[0];
+    if (!firstSeries) {
+      priceLineRefs.current = [];
+      return;
+    }
+    // 移除旧 priceLines（用 createPriceLine 返回的 IPriceLine ref 调 removePriceLine）
+    priceLineRefs.current.forEach((pl) => {
+      try {
+        firstSeries.removePriceLine(pl);
+      } catch {
+        // already disposed — ignore
+      }
+    });
+    priceLineRefs.current = [];
+
+    if (!priceLines || priceLines.length === 0) return;
+
+    for (const line of priceLines) {
+      try {
+        const ref = firstSeries.createPriceLine({
+          price: line.value,
+          color: PRICE_LINE_COLOR_HEX[line.color],
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: line.label,
+        });
+        priceLineRefs.current.push(ref);
+      } catch {
+        // ignore individual line failures
+      }
+    }
+  }, [priceLines, series]);
 
   return (
     <div
