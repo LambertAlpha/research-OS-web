@@ -107,6 +107,20 @@ export function EventsSelector({
               </button>
             </div>
           </div>
+          {/* 引导：信号 indicator vs markers 的定位差异 */}
+          <div className="border-b border-[var(--border-subtle)] bg-[rgba(168,85,247,0.1)] px-3 py-2 text-[11px] leading-relaxed text-[var(--text-secondary)]">
+            <span className="text-[var(--text-faint)]">💡 提示：</span>
+            想看「灯号 / 体制 / BTC 信号」
+            <span className="font-semibold text-[var(--text-primary)]">
+              当前是什么
+            </span>
+            ？拖 <span className="font-mono text-[#a855f7]">🚦 SIG_*</span> 信号
+            indicator 到 pane 看连续状态。Markers 仅标记
+            <span className="font-semibold text-[var(--text-primary)]">
+              瞬时转换
+            </span>
+            。
+          </div>
           <ul className="max-h-80 overflow-y-auto py-1">
             {eventTypes.map((t) => {
               const isOn = enabledSet.has(t.id);

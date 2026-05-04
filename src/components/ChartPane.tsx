@@ -193,11 +193,58 @@ function severityColor(severity: ChartEvent["severity"]): string {
   }
 }
 
+// 给每个事件生成简短文本标签（marker 上 always-visible）
+// 设计：1-4 字符，让用户不 hover 也能看出"这是什么"
+function eventLabelText(e: ChartEvent): string {
+  switch (e.type) {
+    case "hard_stop":
+      return "STOP";
+    case "risk_light_change": {
+      // R/Y/G 三色字符标记（red→yellow → "R→Y"）
+      const f = (e.from_state ?? "").charAt(0).toUpperCase();
+      const t = (e.to_state ?? "").charAt(0).toUpperCase();
+      return f && t ? `${f}→${t}` : "灯号";
+    }
+    case "macro_state_change":
+      return e.to_state ? `→${e.to_state}` : "状态";
+    case "gate_closed":
+      return "闸";
+    case "gate_opened":
+      return "开";
+    case "equity_regime_change": {
+      // 用专门 mapping 给短中文，避免 slice 截断歧义（review-driven fix）
+      // 5 个 regime → 1-2 中文字符
+      const EQUITY_REGIME_SHORT: Record<string, string> = {
+        BULL: "牛",
+        BEAR: "熊",
+        LATE_CYCLE: "晚周",
+        EARLY_RECOVERY: "复苏",
+        TRANSITION: "过渡",
+      };
+      return e.to_state
+        ? EQUITY_REGIME_SHORT[e.to_state] ?? e.to_state.slice(0, 4)
+        : "体制";
+    }
+    case "btc_pattern_triggered":
+      return e.to_state ?? "BTC";
+    case "alert":
+      return "⚠";
+    case "rule_triggered":
+      return "•";
+    default:
+      return "";
+  }
+}
+
 function eventsToMarkers(events: ChartEvent[]): SeriesMarker<Time>[] {
   // 防御：events 来自 API，ts 字段理论上是 ISO 字符串但实际可能为 null/undefined/数字
-  return events
-    .filter((e) => typeof e?.ts === "string" && e.ts.length >= 10)
-    .map((e) => ({
+  // M7+：当 markers 数量 < 50 时给每个 marker 加 text label（不 hover 也能看懂）；
+  // 超过 50 条会重叠成噪音，自动隐藏 text 仅留 shape+color
+  const filtered = events.filter(
+    (e) => typeof e?.ts === "string" && e.ts.length >= 10,
+  );
+  const showText = filtered.length < 50;
+  return filtered.map((e) => ({
       time: e.ts.slice(0, 10) as Time,
       position: e.severity === "critical" ? "aboveBar" : "belowBar",
       color: severityColor(e.severity),
@@ -208,6 +255,7 @@ function eventsToMarkers(events: ChartEvent[]): SeriesMarker<Time>[] {
             ? "circle"
             : "circle",
       size: e.severity === "critical" ? 1.5 : 0.8,
+      text: showText ? eventLabelText(e) : undefined,
     }));
 }
 
