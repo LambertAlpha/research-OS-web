@@ -48,7 +48,9 @@ interface ChartPaneProps {
 // - 第一个 series（base）所有点变成 1.0
 // - 其他 series 按 ts (slice 0,10) 对齐查 base value，相除；找不到 base 时 value 设 null
 function applyRatioMode(seriesList: ChartSeries[]): ChartSeries[] {
-  if (seriesList.length === 0) return seriesList;
+  // review-driven defense：单 series 走 ratio mode 会把唯一线变成 y=1 水平线
+  // 用户体验割裂；少于 2 条 series 直接返回原值不变换
+  if (seriesList.length < 2) return seriesList;
   const base = seriesList[0]!;
   const baseLookup = new Map<string, number>();
   for (const p of base.points) {
