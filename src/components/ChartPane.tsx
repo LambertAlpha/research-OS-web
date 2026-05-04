@@ -44,6 +44,10 @@ interface ChartPaneProps {
   height?: number;
   // Ratio Mode：所有 series 除以第一个 series 的同 ts 值，看跨 series 比率
   ratioMode?: boolean;
+  // 可选 visible range（YYYY-MM-DD 字符串）：开启 per-pane timeRange 时由父组件计算后传入；
+  // chart.timeScale().setVisibleRange 把图 zoom 到该子区间，fetch 区间不变
+  visibleStart?: string;
+  visibleEnd?: string;
 }
 
 // 把 customMarker 转成 ChartEvent shape，复用 markers / tooltip 渲染路径
@@ -266,6 +270,8 @@ export function ChartPane({
   axisOverrides,
   height = 300,
   ratioMode = false,
+  visibleStart,
+  visibleEnd,
 }: ChartPaneProps) {
   // Ratio mode 在装载前预处理（保持 prop 不可变 + 避免下游 useEffect 误判）
   const series = ratioMode ? applyRatioMode(rawSeries) : rawSeries;
@@ -435,9 +441,22 @@ export function ChartPane({
           // priceScale 不可用时安全 ignore
         }
       }
-      chart.timeScale().fitContent();
+      // 如果父组件指定了 visible range（per-pane timeRange override），
+      // 用 setVisibleRange zoom 到子区间；否则 fitContent 显示全部 fetch 的数据
+      if (visibleStart && visibleEnd) {
+        try {
+          chart.timeScale().setVisibleRange({
+            from: visibleStart as Time,
+            to: visibleEnd as Time,
+          });
+        } catch {
+          chart.timeScale().fitContent();
+        }
+      } else {
+        chart.timeScale().fitContent();
+      }
     }
-  }, [series, axisOverrides]);
+  }, [series, axisOverrides, visibleStart, visibleEnd]);
 
   // 3. events markers + 同步给 hover tooltip 用的 ref（含用户 customMarkers）
   useEffect(() => {

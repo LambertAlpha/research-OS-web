@@ -293,6 +293,18 @@ export default function ChartsPage() {
     [],
   );
 
+  const setPaneTimeRange = useCallback(
+    (paneId: string, range: TimeRangePreset | null) => {
+      setState((s) => ({
+        ...s,
+        panes: s.panes.map((p) =>
+          p.id === paneId ? { ...p, timeRange: range ?? undefined } : p,
+        ),
+      }));
+    },
+    [],
+  );
+
   const openSearchFor = useCallback((paneId: string) => {
     setSearchTargetPaneId(paneId);
     setSearchOpen(true);
@@ -330,8 +342,10 @@ export default function ChartsPage() {
     }
   }, []);
 
-  // pre-compute per-pane series + missing
+  // pre-compute per-pane series + missing + visible range
   const paneRender = useMemo(() => {
+    const today = new Date();
+    const globalEnd = state.asOf ? new Date(state.asOf) : today;
     return state.panes.map((pane) => {
       const series = pane.symbols
         .map((sym) => seriesData?.series.find((s) => s.symbol === sym))
@@ -339,9 +353,19 @@ export default function ChartsPage() {
       const missingSymbols = pane.symbols.filter(
         (sym) => !series.some((s) => s.symbol === sym),
       );
-      return { pane, series, missingSymbols };
+      // 计算 pane 的 visible range（如果 pane 有 timeRange override）
+      let visibleStart: string | undefined;
+      let visibleEnd: string | undefined;
+      if (pane.timeRange) {
+        const days = rangeToDays(pane.timeRange);
+        const startDate = new Date(globalEnd);
+        startDate.setDate(startDate.getDate() - days);
+        visibleStart = isoDate(startDate);
+        visibleEnd = isoDate(globalEnd);
+      }
+      return { pane, series, missingSymbols, visibleStart, visibleEnd };
     });
-  }, [state.panes, seriesData]);
+  }, [state.panes, seriesData, state.asOf]);
 
   const targetPane = state.panes.find((p) => p.id === searchTargetPaneId);
   const eventsForOverlay =
@@ -412,12 +436,14 @@ export default function ChartsPage() {
         )}
 
         <div className="space-y-4">
-          {paneRender.map(({ pane, series, missingSymbols }) => (
+          {paneRender.map(({ pane, series, missingSymbols, visibleStart, visibleEnd }) => (
             <EditablePane
               key={pane.id}
               pane={pane}
               series={series}
               events={eventsForOverlay}
+              visibleStart={visibleStart}
+              visibleEnd={visibleEnd}
               customMarkers={state.customMarkers}
               missingSymbols={missingSymbols}
               ratioMode={state.ratioMode}
@@ -426,6 +452,9 @@ export default function ChartsPage() {
               onDeletePane={() => deletePane(pane.id)}
               onSetAxisOverride={(sym, axis) =>
                 setAxisOverride(pane.id, sym, axis)
+              }
+              onSetPaneTimeRange={(range) =>
+                setPaneTimeRange(pane.id, range)
               }
             />
           ))}

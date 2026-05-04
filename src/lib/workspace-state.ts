@@ -33,6 +33,11 @@ export interface WorkspacePane {
   symbols: string[];
   // 用户手动覆盖该 pane 内 series 的 y 轴归属，缺失时走 ChartPane 自动聚类
   axisOverrides?: Record<string, "left" | "right">;
+  // M7+: 该 pane 的 timeRange override（用于多 timeframe 视图）。
+  // 缺失时走全局 state.range；设了之后此 pane 仅显示该区间（fetch 区间不变，
+  // 由 lightweight-charts setVisibleRange zoom 到该区间）。
+  // 约束：仅能 zoom in（pane.timeRange <= state.range），更大范围请调全局。
+  timeRange?: TimeRangePreset;
 }
 
 // 推荐默认勾选的事件类型（覆盖核心模型决策事件，不含 rule_triggered/alert 噪音）
@@ -161,7 +166,12 @@ export function presetToWorkspace(
 
 interface CompactState {
   // 新版字段
-  p: { t: string; s: string[]; o?: Record<string, "left" | "right"> }[];
+  p: {
+    t: string;
+    s: string[];
+    o?: Record<string, "left" | "right">;
+    tr?: TimeRangePreset;
+  }[];
   r: TimeRangePreset;
   x: ChartTransform;
   a?: string | null;
@@ -191,6 +201,9 @@ export function encodeWorkspace(state: WorkspaceState): string {
       const entry: CompactState["p"][number] = { t: p.title, s: p.symbols };
       if (p.axisOverrides && Object.keys(p.axisOverrides).length > 0) {
         entry.o = p.axisOverrides;
+      }
+      if (p.timeRange) {
+        entry.tr = p.timeRange;
       }
       return entry;
     }),
@@ -252,6 +265,17 @@ export function decodeWorkspace(encoded: string): WorkspaceState | null {
         );
         if (p.o && typeof p.o === "object") {
           pane.axisOverrides = p.o;
+        }
+        if (
+          p.tr === "1M" ||
+          p.tr === "3M" ||
+          p.tr === "6M" ||
+          p.tr === "1Y" ||
+          p.tr === "2Y" ||
+          p.tr === "3Y" ||
+          p.tr === "ALL"
+        ) {
+          pane.timeRange = p.tr;
         }
         return pane;
       }),
