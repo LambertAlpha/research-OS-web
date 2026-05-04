@@ -211,9 +211,20 @@ function eventLabelText(e: ChartEvent): string {
       return "闸";
     case "gate_opened":
       return "开";
-    case "equity_regime_change":
-      // BULL/BEAR/LATE_CYCLE/EARLY_RECOVERY/TRANSITION → 取前 2 字符
-      return e.to_state ? e.to_state.slice(0, 4) : "体制";
+    case "equity_regime_change": {
+      // 用专门 mapping 给短中文，避免 slice 截断歧义（review-driven fix）
+      // 5 个 regime → 1-2 中文字符
+      const EQUITY_REGIME_SHORT: Record<string, string> = {
+        BULL: "牛",
+        BEAR: "熊",
+        LATE_CYCLE: "晚周",
+        EARLY_RECOVERY: "复苏",
+        TRANSITION: "过渡",
+      };
+      return e.to_state
+        ? EQUITY_REGIME_SHORT[e.to_state] ?? e.to_state.slice(0, 4)
+        : "体制";
+    }
     case "btc_pattern_triggered":
       return e.to_state ?? "BTC";
     case "alert":
