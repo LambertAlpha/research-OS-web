@@ -38,10 +38,29 @@ import {
 interface ChartPaneProps {
   series: ChartSeries[];
   events?: ChartEvent[];
+  // 用户自定义 marker（标注政策日 / 买卖点 / 重要事件），会与 events 合并渲染到图表上
+  customMarkers?: { id: string; ts: string; label: string; severity: ChartEvent["severity"] }[];
   axisOverrides?: Record<string, "left" | "right">;
   height?: number;
   // Ratio Mode：所有 series 除以第一个 series 的同 ts 值，看跨 series 比率
   ratioMode?: boolean;
+}
+
+// 把 customMarker 转成 ChartEvent shape，复用 markers / tooltip 渲染路径
+function customMarkersToEvents(
+  markers: { id: string; ts: string; label: string; severity: ChartEvent["severity"] }[],
+): ChartEvent[] {
+  return markers.map((m) => ({
+    ts: m.ts.slice(0, 10) + "T00:00:00Z",
+    model: "custom",
+    type: "user_marker",
+    severity: m.severity,
+    label: m.label,
+    from_state: null,
+    to_state: null,
+    rule_id: null,
+    payload: null,
+  }));
 }
 
 // 把 series 列表转换成 ratio mode 数据：
@@ -243,12 +262,20 @@ function buildTooltipHtml(date: string, events: ChartEvent[]): string {
 export function ChartPane({
   series: rawSeries,
   events,
+  customMarkers,
   axisOverrides,
   height = 300,
   ratioMode = false,
 }: ChartPaneProps) {
   // Ratio mode 在装载前预处理（保持 prop 不可变 + 避免下游 useEffect 误判）
   const series = ratioMode ? applyRatioMode(rawSeries) : rawSeries;
+  // 把用户自定义 markers 跟模型事件合并（前端无差别渲染）
+  const allEvents: ChartEvent[] = [
+    ...(events ?? []),
+    ...(customMarkers && customMarkers.length > 0
+      ? customMarkersToEvents(customMarkers)
+      : []),
+  ];
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRefs = useRef<ISeriesApi<"Line">[]>([]);
@@ -408,21 +435,21 @@ export function ChartPane({
     }
   }, [series, axisOverrides]);
 
-  // 3. events markers + 同步给 hover tooltip 用的 ref
+  // 3. events markers + 同步给 hover tooltip 用的 ref（含用户 customMarkers）
   useEffect(() => {
-    eventsRef.current = events ?? [];
+    eventsRef.current = allEvents;
     const chart = chartRef.current;
     const firstSeries = seriesRefs.current[0];
     if (!chart || !firstSeries) return;
 
-    const markers = events && events.length > 0 ? eventsToMarkers(events) : [];
+    const markers = allEvents.length > 0 ? eventsToMarkers(allEvents) : [];
 
     if (markersPluginRef.current) {
       markersPluginRef.current.setMarkers(markers);
     } else if (markers.length > 0) {
       markersPluginRef.current = createSeriesMarkers(firstSeries, markers);
     }
-  }, [events, series]);
+  }, [allEvents, series]);
 
   return (
     <div
