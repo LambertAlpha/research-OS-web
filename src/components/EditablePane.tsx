@@ -22,6 +22,7 @@ interface EditablePaneProps {
   series: ChartSeries[];
   events?: ChartEvent[];
   missingSymbols: string[];
+  ratioMode?: boolean;
   onRemoveSeries: (symbol: string) => void;
   onAddIndicator: () => void;
   onDeletePane: () => void;
@@ -57,6 +58,7 @@ export function EditablePane({
   series,
   events,
   missingSymbols,
+  ratioMode = false,
   onRemoveSeries,
   onAddIndicator,
   onDeletePane,
@@ -169,6 +171,7 @@ export function EditablePane({
           events={events}
           axisOverrides={pane.axisOverrides}
           height={300}
+          ratioMode={ratioMode}
         />
       ) : (
         <div className="rounded-[10px] border border-dashed border-[var(--border-subtle)] bg-[var(--bg-inset)] py-12 text-center text-sm text-[var(--text-muted)]">

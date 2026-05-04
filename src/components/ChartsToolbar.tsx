@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Copy, RotateCcw, Plus, Clock } from "lucide-react";
+import { Copy, RotateCcw, Plus, Clock, Divide } from "lucide-react";
 import type { ChartPreset, ChartEventType } from "@/types/api";
 import {
   TIME_RANGE_PRESETS,
@@ -23,11 +23,13 @@ interface ChartsToolbarProps {
   eventTypes: ChartEventType[];
   enabledEventTypes: string[];
   defaultEventTypes: string[];
+  ratioMode: boolean;
   onLoadPreset: (preset: ChartPreset) => void;
   onRangeChange: (r: TimeRangePreset) => void;
   onTransformChange: (t: ChartTransform) => void;
   onAsOfChange: (asOf: string | null) => void;
   onEventTypesChange: (next: string[]) => void;
+  onToggleRatioMode: () => void;
   onAddPane: () => void;
   onReset: () => void;
   onCopyUrl: () => void;
@@ -48,11 +50,13 @@ export function ChartsToolbar({
   eventTypes,
   enabledEventTypes,
   defaultEventTypes,
+  ratioMode,
   onLoadPreset,
   onRangeChange,
   onTransformChange,
   onAsOfChange,
   onEventTypesChange,
+  onToggleRatioMode,
   onAddPane,
   onReset,
   onCopyUrl,
@@ -163,6 +167,25 @@ export function ChartsToolbar({
             defaultRecommended={defaultEventTypes}
             onChange={onEventTypesChange}
           />
+
+          {/* Ratio Mode toggle */}
+          <button
+            onClick={onToggleRatioMode}
+            className={
+              "flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors " +
+              (ratioMode
+                ? "border-[rgba(168,85,247,0.4)] bg-[rgba(168,85,247,0.12)] text-[#a855f7]"
+                : "border-[var(--border-subtle)] bg-[var(--bg-inset)] text-[var(--text-muted)] hover:text-[var(--text-primary)]")
+            }
+            title={
+              ratioMode
+                ? "Ratio Mode 已开启：每个 pane 内所有 series 除以第一个 series 的同 ts 值"
+                : "Ratio Mode：把第一个 series 当 base，其他 series 显示为相对比率（例如 BTC/Realized）"
+            }
+          >
+            <Divide className="h-3 w-3" />
+            比率
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
