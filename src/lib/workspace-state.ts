@@ -72,13 +72,12 @@ export const PRICE_LINE_COLOR_HEX: Record<PriceLine["color"], string> = {
   blue: "#3b82f6",
 };
 
-// 推荐默认勾选的事件类型（覆盖核心模型决策事件，不含 rule_triggered/alert 噪音）
+// 推荐默认勾选的事件类型（M7+ 减到 2 类最关键的 — markers 视觉噪音降低 70%）
+// 看持续状态（如灯号是什么/macro 体制是什么）建议拖 🚦 signal indicator 到 pane，
+// 不要靠 markers — 这俩定位不同：markers 标"瞬时转换"，signals 标"连续状态"
 export const DEFAULT_ENABLED_EVENT_TYPES: string[] = [
-  "risk_light_change",
   "hard_stop",
-  "macro_state_change",
-  "equity_regime_change",
-  "btc_pattern_triggered",
+  "risk_light_change",
 ];
 
 // 用户自定义事件 marker（标注政策日 / 自己的买卖点 / 重要事件）
