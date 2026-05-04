@@ -132,9 +132,11 @@ export function IndicatorSearchModal({
                       <span
                         className={
                           "shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] " +
-                          (ind.series_type === "feature"
-                            ? "bg-[rgba(234,179,8,0.1)] text-[var(--status-amber)]"
-                            : "bg-[var(--bg-elevated)] text-[var(--text-faint)]")
+                          (ind.series_type === "signal"
+                            ? "bg-[rgba(168,85,247,0.12)] text-[#a855f7]"
+                            : ind.series_type === "feature"
+                              ? "bg-[rgba(234,179,8,0.1)] text-[var(--status-amber)]"
+                              : "bg-[var(--bg-elevated)] text-[var(--text-faint)]")
                         }
                       >
                         {ind.series_type}

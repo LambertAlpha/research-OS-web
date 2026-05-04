@@ -523,7 +523,7 @@ export interface ChartIndicator {
   model_module: string;
   unit: string | null;
   thresholds: unknown;
-  series_type: "raw" | "feature";
+  series_type: "raw" | "feature" | "signal";
   is_active: boolean;
 }
 
@@ -574,7 +574,7 @@ export interface ChartSeries {
   symbol: string;
   display_name: string;
   unit: string | null;
-  source: "raw" | "feature";
+  source: "raw" | "feature" | "signal";
   points: ChartSeriesPoint[];
 }
 
