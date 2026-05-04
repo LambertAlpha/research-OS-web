@@ -14,8 +14,19 @@
 import { X, Plus, Trash2 } from "lucide-react";
 import { ChartPane } from "./ChartPane";
 import type { ChartEvent, ChartSeries } from "@/types/api";
-import type { WorkspacePane } from "@/lib/workspace-state";
+import { rangeToDays, type TimeRangePreset, type WorkspacePane } from "@/lib/workspace-state";
 import { getSeriesColor } from "@/lib/chart-theme";
+
+const PANE_TIMERANGE_OPTIONS: { value: TimeRangePreset | ""; label: string }[] = [
+  { value: "", label: "跟全局" },
+  { value: "1M", label: "1M" },
+  { value: "3M", label: "3M" },
+  { value: "6M", label: "6M" },
+  { value: "1Y", label: "1Y" },
+  { value: "2Y", label: "2Y" },
+  { value: "3Y", label: "3Y" },
+  { value: "ALL", label: "ALL" },
+];
 
 interface EditablePaneProps {
   pane: WorkspacePane;
@@ -24,6 +35,10 @@ interface EditablePaneProps {
   missingSymbols: string[];
   ratioMode?: boolean;
   customMarkers?: { id: string; ts: string; label: string; severity: "info" | "warning" | "critical" }[];
+  visibleStart?: string;
+  visibleEnd?: string;
+  // 全局 range — 用于 disable 大于全局的 pane timeRange 选项（避免数据被隐形截断）
+  globalRange?: TimeRangePreset;
   onRemoveSeries: (symbol: string) => void;
   onAddIndicator: () => void;
   onDeletePane: () => void;
@@ -31,6 +46,7 @@ interface EditablePaneProps {
     symbol: string,
     axis: "left" | "right" | null,
   ) => void;
+  onSetPaneTimeRange?: (range: TimeRangePreset | null) => void;
 }
 
 // chip 上的轴状态循环：null (Auto) → left → right → null
@@ -61,10 +77,14 @@ export function EditablePane({
   missingSymbols,
   ratioMode = false,
   customMarkers,
+  visibleStart,
+  visibleEnd,
+  globalRange,
   onRemoveSeries,
   onAddIndicator,
   onDeletePane,
   onSetAxisOverride,
+  onSetPaneTimeRange,
 }: EditablePaneProps) {
   // axis toggle 仅对多 series 且存在数据的 pane 有意义
   const showAxisToggle = series.length >= 2 && onSetAxisOverride !== undefined;
@@ -73,10 +93,42 @@ export function EditablePane({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3 px-1">
-        <h3 className="text-sm font-medium text-[var(--text-primary)]">
-          {pane.title}
-        </h3>
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">
+            {pane.title}
+          </h3>
+          {pane.timeRange && (
+            <span className="rounded border border-[rgba(168,85,247,0.3)] bg-[rgba(168,85,247,0.08)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-[#a855f7]">
+              {pane.timeRange}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
+          {onSetPaneTimeRange && (
+            <select
+              value={pane.timeRange ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                onSetPaneTimeRange(v === "" ? null : (v as TimeRangePreset));
+              }}
+              className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-1.5 py-0.5 text-xs text-[var(--text-secondary)] outline-none hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+              title="此 pane 的 timeRange override（仅 zoom in 至 ≤ 全局范围；要更大区间请调全局工具栏）"
+            >
+              {PANE_TIMERANGE_OPTIONS.map((opt) => {
+                const isLarger =
+                  opt.value !== "" &&
+                  globalRange !== undefined &&
+                  rangeToDays(opt.value as TimeRangePreset) >
+                    rangeToDays(globalRange);
+                return (
+                  <option key={opt.value} value={opt.value} disabled={isLarger}>
+                    {opt.label}
+                    {isLarger ? " (>全局)" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          )}
           <button
             onClick={onAddIndicator}
             className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
@@ -175,6 +227,8 @@ export function EditablePane({
           axisOverrides={pane.axisOverrides}
           height={300}
           ratioMode={ratioMode}
+          visibleStart={visibleStart}
+          visibleEnd={visibleEnd}
         />
       ) : (
         <div className="rounded-[10px] border border-dashed border-[var(--border-subtle)] bg-[var(--bg-inset)] py-12 text-center text-sm text-[var(--text-muted)]">
