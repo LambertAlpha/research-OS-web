@@ -3,6 +3,7 @@
  * [OUTPUT]: (Promise<T>) - 类型安全的 API 响应数据，或抛出 Error。
  * [POS]: 位于 /lib，被所有页面组件引用。单例 ApiClient 封装所有后端 API 调用，通过 Next.js rewrite 代理转发请求。
  *        新增 getModelRegistry(), getIndicatorCatalog(), getAlertHistory() 方法。
+ *        2026-05 新增 getTreasuryNarrative() 与独立 fetcher fetchTreasuryNarrative() — 美债敘事判定系统 v1.0。
  *
  * [PROTOCOL]:
  * 1. 一旦本文件逻辑变更，必须同步更新此 Header。
@@ -29,6 +30,7 @@ import type {
   ChartSeriesResponse,
   ChartEventsResponse,
 } from "@/types/api";
+import type { TreasuryNarrativeResponse } from "@/types/treasury-narrative";
 
 /**
  * 深度清理 API 响应中可能存在的枚举对象
@@ -488,7 +490,26 @@ class ApiClient {
     const q = qs.toString();
     return this.request(`/api/chart/events${q ? "?" + q : ""}`);
   }
+
+  // ==================== Treasury Narrative Model (v1.0) ====================
+
+  /**
+   * 获取美债敘事判定系统输出 (v1.0)
+   * 后端：GET /api/treasury-narrative
+   * 返回：最新 model_output 中 macro_state JSONB 透传到 treasury 字段
+   */
+  async getTreasuryNarrative(): Promise<TreasuryNarrativeResponse> {
+    return this.request<TreasuryNarrativeResponse>("/api/treasury-narrative");
+  }
 }
 
 export const apiClient = new ApiClient();
 export default apiClient;
+
+/**
+ * 独立 fetcher（react-query 友好）。等价于 apiClient.getTreasuryNarrative()，
+ * 复用 ApiClient.request 的 ApiResponse<T> unwrap + sanitizeEnumObjects 清洗。
+ */
+export async function fetchTreasuryNarrative(): Promise<TreasuryNarrativeResponse> {
+  return apiClient.getTreasuryNarrative();
+}

@@ -442,7 +442,13 @@ export interface SignalChange {
 }
 
 /** 回测支持的模型类型 */
-export type BacktestModelType = "combined" | "liquidity" | "macro" | "equity" | "btc";
+export type BacktestModelType =
+  | "combined"
+  | "liquidity"
+  | "macro"
+  | "equity"
+  | "btc"
+  | "treasury_narrative";
 
 // 回测结果
 export interface BacktestResult {

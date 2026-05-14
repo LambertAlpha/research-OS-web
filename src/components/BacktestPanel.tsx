@@ -62,6 +62,11 @@ const MODEL_PRICE_SYMBOLS: Record<BacktestModelType, { value: string; label: str
   btc: [
     { value: "BTC-USD", label: "Bitcoin" },
   ],
+  treasury_narrative: [
+    { value: "US10Y", label: "10Y Treasury Yield" },
+    { value: "US02Y", label: "2Y Treasury Yield" },
+    { value: "TLT", label: "TLT (20Y+ Bond ETF)" },
+  ],
 };
 
 const PRESETS = [
