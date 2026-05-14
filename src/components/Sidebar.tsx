@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 无 props。内部读取 usePathname() 获取当前路由路径。
- * [OUTPUT]: (<aside>) - 固定左侧导航栏，含 Logo、八个导航项（含 Charts Workspace）、系统状态、Settings 入口。
+ * [OUTPUT]: (<aside>) - 固定左侧导航栏，含 Logo、九个导航项（含 Treasury Narrative 与 Charts Workspace）、系统状态、Settings 入口。
  * [POS]: 位于 /components，被 layout.tsx 引用。全局唯一的导航组件，固定于屏幕左侧 (w-60, h-screen)。
  *
  * [PROTOCOL]:
@@ -23,6 +23,7 @@ import {
   BookOpen,
   Bitcoin,
   LineChart,
+  Landmark,
 } from "lucide-react";
 
 const navItems = [
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/liquidity", label: "Liquidity", icon: Droplets },
   { href: "/equity", label: "US Equities", icon: BarChart3 },
   { href: "/btc", label: "Bitcoin", icon: Bitcoin },
+  { href: "/treasury-narrative", label: "Treasury", icon: Landmark },
   { href: "/charts", label: "Charts", icon: LineChart },
   { href: "/history", label: "History", icon: History },
   { href: "/registry", label: "Registry", icon: Database },
