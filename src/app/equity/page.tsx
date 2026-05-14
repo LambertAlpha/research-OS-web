@@ -105,6 +105,78 @@ const SUB_INDICATOR_LABELS: Record<string, string> = {
   RUT: "Russell 2000",
 };
 
+// 7 因子中文名（顺序对应文档 §四）
+const FACTOR_LABEL_MAP: Record<string, string> = {
+  spx_trend: "SPX vs 200DMA",
+  ad_line: "A/D Line 趋势",
+  pct_above_200dma: "站上 200DMA 比例",
+  eps_revision: "前瞻 EPS 修正",
+  hy_oas: "信用利差 HY OAS",
+  fed_policy: "Fed 政策",
+  sentiment: "情绪 AAII/NAAIM",
+};
+
+// 因子投票的 4 个体制（单因子只投 BULL/EARLY_RECOVERY/LATE_CYCLE/BEAR，
+// TRANSITION 仅是合议结果不作单因子投票，故矩阵列只展示 4 个）
+const REGIME_ORDER = ["BULL", "EARLY_RECOVERY", "LATE_CYCLE", "BEAR"];
+
+const REGIME_LABEL: Record<string, string> = {
+  BULL: "牛市",
+  EARLY_RECOVERY: "早期复苏",
+  TRANSITION: "过渡",
+  LATE_CYCLE: "晚周期",
+  BEAR: "熊市",
+};
+
+// 7 因子在 5 体制下的判定文字（PDF §四原表）— 用于 tooltip
+const FACTOR_REGIME_DESC: Record<string, Record<string, string>> = {
+  spx_trend: {
+    BULL: "在上方上升中", LATE_CYCLE: "在上方但趋平",
+    BEAR: "在下方下降", EARLY_RECOVERY: "在下方但趋平", TRANSITION: "—",
+  },
+  ad_line: {
+    BULL: "同步创新高", LATE_CYCLE: "与指数背离",
+    BEAR: "持续创新低", EARLY_RECOVERY: "向上拐头", TRANSITION: "—",
+  },
+  pct_above_200dma: {
+    BULL: ">65%", LATE_CYCLE: "45-65% 下降",
+    BEAR: "<35%", EARLY_RECOVERY: "<35% 但回升", TRANSITION: "—",
+  },
+  eps_revision: {
+    BULL: "净正值", LATE_CYCLE: "趋平",
+    BEAR: "净负值", EARLY_RECOVERY: "转正", TRANSITION: "—",
+  },
+  hy_oas: {
+    BULL: "<400bp", LATE_CYCLE: "从低位回升",
+    BEAR: ">500bp", EARLY_RECOVERY: "见顶收窄", TRANSITION: "—",
+  },
+  fed_policy: {
+    BULL: "中性至宽松", LATE_CYCLE: "紧缩中",
+    BEAR: "限制性", EARLY_RECOVERY: "转向宽松", TRANSITION: "—",
+  },
+  sentiment: {
+    BULL: "正常", LATE_CYCLE: "极度乐观",
+    BEAR: "极度恐慌", EARLY_RECOVERY: "仍恐惧", TRANSITION: "—",
+  },
+};
+
+// 因子原始值的展示格式化
+function formatFactorValue(key: string, factor: any): string {
+  if (!factor) return "—";
+  if (key === "spx_trend") {
+    const above = factor.spx_above_200dma;
+    const slope = factor.spx_200dma_slope;
+    return `${above ? "上方" : "下方"}${slope !== undefined ? `, 斜率 ${slope > 0 ? "+" : ""}${Number(slope).toFixed(2)}%/d` : ""}`;
+  }
+  if (key === "pct_above_200dma") return factor.value !== undefined ? `${Number(factor.value).toFixed(0)}%` : "—";
+  if (key === "eps_revision") return factor.value !== undefined ? `${Number(factor.value).toFixed(0)} (Citi)` : "—";
+  if (key === "hy_oas") return factor.value !== undefined ? `${Number(factor.value).toFixed(2)}%` : "—";
+  if (key === "fed_policy") return factor.dff_3m_change !== undefined ? `Δ3M=${Number(factor.dff_3m_change).toFixed(2)}` : "—";
+  if (key === "sentiment") return factor.naaim !== undefined ? `NAAIM=${Number(factor.naaim).toFixed(0)}` : "—";
+  if (key === "ad_line") return factor.value !== undefined ? `${Number(factor.value).toFixed(0)}` : "—";
+  return "—";
+}
+
 // 子指标数值单位声明（驱动数值格式化）
 type SubIndicatorUnit = "usd_m" | "usd_b" | "percent" | "yoy_pct" | "ratio" | "bps" | "raw";
 const SUB_INDICATOR_UNIT: Record<string, SubIndicatorUnit> = {
@@ -253,6 +325,106 @@ function SubIndicatorRow({ k, value }: { k: string; value: unknown }) {
 
 function getRegimeColor(code: string): string {
   return REGIME_COLOR_MAP[code] || "#6b7280";
+}
+
+// ============================================================================
+// FactorMatrix：7 因子 × 5 体制 投票矩阵
+// ============================================================================
+
+function FactorMatrix({ regime }: { regime: any }) {
+  const factors = regime?.factors as Record<string, any> | undefined;
+  const voteCounts = regime?.vote_counts as Record<string, number> | undefined;
+  if (!factors || !voteCounts) return null;
+
+  // 文档 §四：7 因子里 ≥5 个一致 = 多数派 → 确认体制；< 5 = 信号分裂 → TRANSITION
+  const threshold = 5;
+
+  const sortedVotes = Object.entries(voteCounts).sort((a, b) => b[1] - a[1]);
+  const [topCode, topCount] = sortedVotes[0] || ["TRANSITION", 0];
+
+  const isSplit = topCount < threshold;
+  const distanceText = isSplit
+    ? `距 ${REGIME_LABEL[topCode] || topCode} 切换还差 ${threshold - topCount} 个因子`
+    : "信号确认";
+
+  return (
+    <div
+      className="mb-8 rounded-[14px] border p-5"
+      style={{ backgroundColor: "var(--bg-card)", borderColor: "#27272a" }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-zinc-400" />
+          <h3 className="text-sm font-medium text-zinc-200">7 因子体制识别清单</h3>
+        </div>
+        <div className="text-xs text-zinc-400">{distanceText}</div>
+      </div>
+
+      {/* 投票统计 bar */}
+      <div className="flex items-center gap-2 mb-4 text-xs flex-wrap">
+        <span className="text-zinc-500">投票:</span>
+        {REGIME_ORDER.filter((r) => (voteCounts[r] || 0) > 0).map((r) => (
+          <span
+            key={r}
+            className="px-2 py-0.5 rounded"
+            style={{
+              backgroundColor: `${getRegimeColor(r)}20`,
+              color: getRegimeColor(r),
+            }}
+          >
+            {voteCounts[r]} {REGIME_LABEL[r]}
+          </span>
+        ))}
+        <span className="text-zinc-500 ml-1">→</span>
+        <span className="font-medium" style={{ color: getRegimeColor(regime.code) }}>
+          {REGIME_LABEL[regime.code] || regime.code}
+        </span>
+        {isSplit && <span className="text-amber-500 text-[10px]">(信号分裂)</span>}
+      </div>
+
+      {/* 因子矩阵 */}
+      <div className="space-y-1">
+        <div className="grid grid-cols-[140px_repeat(4,_70px)_1fr] gap-2 text-[10px] text-zinc-500 px-2 py-1 border-b border-zinc-800">
+          <div>因子</div>
+          {REGIME_ORDER.map((r) => (
+            <div key={r} className="text-center">
+              {REGIME_LABEL[r]}
+            </div>
+          ))}
+          <div className="text-zinc-400 pl-2">实测</div>
+        </div>
+        {Object.keys(FACTOR_LABEL_MAP).map((key) => {
+          const factor = factors[key];
+          if (!factor) return null;
+          const voteCode = factor.vote;
+          return (
+            <div
+              key={key}
+              className="grid grid-cols-[140px_repeat(4,_70px)_1fr] gap-2 text-xs px-2 py-2 rounded hover:bg-zinc-900/30 transition-colors"
+              title={FACTOR_REGIME_DESC[key]?.[voteCode] || ""}
+            >
+              <div className="text-zinc-300">{FACTOR_LABEL_MAP[key]}</div>
+              {REGIME_ORDER.map((r) => (
+                <div key={r} className="flex justify-center items-center h-5">
+                  {r === voteCode ? (
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: getRegimeColor(r) }}
+                    />
+                  ) : (
+                    <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                  )}
+                </div>
+              ))}
+              <div className="text-zinc-400 pl-2 text-[11px]">
+                {formatFactorValue(key, factor)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function getRegimeName(code: string): string {
@@ -578,6 +750,11 @@ export default function EquityPage() {
                 </div>
               )}
             </div>
+
+            {/* ================================================================
+                7 因子体制识别清单（vote_counts 存在时渲染，向后兼容）
+                ================================================================ */}
+            {regime?.factors && regime?.vote_counts && <FactorMatrix regime={regime} />}
 
             <div className="divider" />
 

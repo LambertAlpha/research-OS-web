@@ -246,16 +246,17 @@ export interface HealthCheck {
 // ============================================================================
 
 export interface RegimeFactor {
-  name: string;
-  value: any;
   vote: string;
+  value?: number;
   detail?: string;
+  [key: string]: any; // 保留额外字段如 spx_above_200dma / dff_3m_change / naaim
 }
 
 export interface Regime {
   code: string; // BULL / LATE_CYCLE / BEAR / EARLY_RECOVERY / TRANSITION
   name: string;
-  factors?: Record<string, any>;
+  factors?: Record<string, RegimeFactor>;
+  vote_counts?: Record<string, number>;
   position_cap?: number;
 }
 
