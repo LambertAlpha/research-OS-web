@@ -83,6 +83,10 @@ export interface TreasuryNarrativeAllScores {
   id: NarrativeId | "N/A";
   score: number;
   active_evidence: number;
+  total_signature_count?: number;
+  cycle?: Cycle;
+  driver?: Driver;
+  evidence?: TreasuryEvidenceItem[];
 }
 
 export interface TreasuryConfidence {
