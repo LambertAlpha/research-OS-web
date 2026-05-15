@@ -24,6 +24,7 @@ import apiClient, { fetchTreasuryNarrative } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 import type {
+  EvidenceLevel,
   NarrativeId,
   TreasuryEvidenceItem,
   TreasuryIndicatorEvidence,
@@ -37,10 +38,16 @@ import {
 } from "@/types/treasury-narrative";
 
 import {
+  AlertCircle,
   AlertTriangle,
   Activity,
+  ArrowLeftRight,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  Circle,
+  CircleDot,
+  Clock,
   FileText,
   Gauge,
   LineChart,
@@ -51,6 +58,7 @@ import {
   Target,
   Wallet,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 const BacktestPanel = dynamic(
@@ -83,6 +91,53 @@ const NARRATIVE_ORDER: NarrativeId[] = [
   "N-01", "N-02", "N-03", "N-04", "N-05", "N-06", "N-07",
   "N-08", "N-09", "N-10", "N-11", "N-12", "N-13",
 ];
+
+// Evidence level → icon / color 映射（卡片展开显示 signature breakdown 用）
+interface EvidenceLevelConfig {
+  icon: LucideIcon;
+  iconColor: string;
+  label: string;
+  chipClass: string;
+}
+
+const EVIDENCE_LEVEL_CONFIG: Record<EvidenceLevel, EvidenceLevelConfig> = {
+  full: {
+    icon: CheckCircle2,
+    iconColor: "text-emerald-400",
+    label: "✓ FULL",
+    chipClass: "bg-emerald-500/10 text-emerald-300",
+  },
+  partial: {
+    icon: CircleDot,
+    iconColor: "text-amber-400",
+    label: "◐ PART",
+    chipClass: "bg-amber-500/10 text-amber-300",
+  },
+  reverse: {
+    icon: ArrowLeftRight,
+    iconColor: "text-red-400",
+    label: "⟲ REVERSE",
+    chipClass: "bg-red-500/10 text-red-300",
+  },
+  missing: {
+    icon: AlertCircle,
+    iconColor: "text-orange-400",
+    label: "⚠ MISS",
+    chipClass: "bg-orange-500/10 text-orange-300",
+  },
+  pending: {
+    icon: Clock,
+    iconColor: "text-zinc-500",
+    label: "⏳ PEND",
+    chipClass: "bg-zinc-700/30 text-zinc-400",
+  },
+  none: {
+    icon: Circle,
+    iconColor: "text-zinc-600",
+    label: "·",
+    chipClass: "bg-zinc-800/30 text-zinc-500",
+  },
+};
 
 // 27 个指标的元数据（id → name + group + signature_count），与 yml 中 indicators / weight_summary 对齐
 interface IndicatorMeta {
@@ -268,6 +323,7 @@ export default function TreasuryNarrativePage() {
             <NarrativeMatrix
               primaryId={primary.id}
               allScoresMap={allScoresMap}
+              primaryEvidence={primary.evidence ?? []}
             />
 
             {/* ============================================================
@@ -606,9 +662,11 @@ function BannerStack({
 function NarrativeMatrix({
   primaryId,
   allScoresMap,
+  primaryEvidence,
 }: {
   primaryId: string;
   allScoresMap: Map<string, TreasuryNarrativeAllScores>;
+  primaryEvidence: TreasuryEvidenceItem[];
 }) {
   return (
     <div className="mb-8">
@@ -634,14 +692,18 @@ function NarrativeMatrix({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {NARRATIVE_ORDER.map((nid) => (
-          <NarrativeMatrixCard
-            key={nid}
-            narrativeId={nid}
-            isPrimary={nid === primaryId}
-            score={allScoresMap.get(nid)}
-          />
-        ))}
+        {NARRATIVE_ORDER.map((nid) => {
+          const isPrimary = nid === primaryId;
+          return (
+            <NarrativeMatrixCard
+              key={nid}
+              narrativeId={nid}
+              isPrimary={isPrimary}
+              score={allScoresMap.get(nid)}
+              primaryEvidenceFallback={isPrimary ? primaryEvidence : undefined}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -651,15 +713,32 @@ function NarrativeMatrixCard({
   narrativeId,
   isPrimary,
   score,
+  primaryEvidenceFallback,
 }: {
   narrativeId: NarrativeId;
   isPrimary: boolean;
   score: TreasuryNarrativeAllScores | undefined;
+  primaryEvidenceFallback?: TreasuryEvidenceItem[];
 }) {
   const meta = NARRATIVE_METADATA[narrativeId];
   const matchScore = score?.score ?? 0;
   const activeEvidence = score?.active_evidence ?? 0;
+  // 优先使用 all_scores 里的 evidence（新后端契约）；fallback 到主敘事的 evidence（兼容旧后端）
+  const evidence =
+    score?.evidence && score.evidence.length > 0
+      ? score.evidence
+      : isPrimary && primaryEvidenceFallback
+        ? primaryEvidenceFallback
+        : [];
+  const totalSignatureCount = score?.total_signature_count ?? evidence.length;
   const isNear = !isPrimary && matchScore >= 40;
+
+  // primary 默认展开，其余默认折叠（突出主敘事的 signature breakdown）
+  const [expanded, setExpanded] = useState(isPrimary);
+
+  const fullCount = evidence.filter((e) => e.level === "full").length;
+  const partialCount = evidence.filter((e) => e.level === "partial").length;
+  const reverseCount = evidence.filter((e) => e.level === "reverse").length;
 
   const stateLabel = isPrimary ? "✅ 主敘事" : isNear ? "🟡 接近触发" : "未触发";
   const statusColor = isPrimary ? "#818cf8" : isNear ? "#fbbf24" : "#52525b";
@@ -728,12 +807,37 @@ function NarrativeMatrixCard({
         </div>
       </div>
 
-      {/* 底部：active_evidence + lifespan */}
-      <div className="flex items-center justify-between text-[10px] text-zinc-500">
-        <span>
-          命中 <span className="text-zinc-300 font-medium">{activeEvidence}</span> active
-        </span>
-        <span className="truncate ml-2">{meta.typical_lifespan}</span>
+      {/* 命中度行（学 HERO 风格，展示 full/partial/reverse 分布）*/}
+      <div className="text-[10px] text-zinc-500 flex items-center gap-1.5 flex-wrap">
+        {evidence.length > 0 ? (
+          <>
+            <span>
+              <span className="text-emerald-400 font-medium">{fullCount}</span>
+              <span className="text-zinc-600"> full</span>
+            </span>
+            <span className="text-zinc-700">·</span>
+            <span>
+              <span className="text-amber-400 font-medium">{partialCount}</span>
+              <span className="text-zinc-600"> partial</span>
+            </span>
+            {reverseCount > 0 && (
+              <>
+                <span className="text-zinc-700">·</span>
+                <span>
+                  <span className="text-red-400 font-medium">{reverseCount}</span>
+                  <span className="text-zinc-600"> reverse</span>
+                </span>
+              </>
+            )}
+            <span className="text-zinc-700">·</span>
+            <span className="text-zinc-500">共 {totalSignatureCount} 项</span>
+          </>
+        ) : (
+          <span>
+            命中 <span className="text-zinc-300 font-medium">{activeEvidence}</span> active · 共 {totalSignatureCount} 项
+          </span>
+        )}
+        <span className="truncate ml-auto text-zinc-600">{meta.typical_lifespan}</span>
       </div>
 
       {/* N-13 标记 */}
@@ -743,6 +847,108 @@ function NarrativeMatrixCard({
           覆盖层 · 优先于所有其他敘事
         </div>
       )}
+
+      {/* 展开按钮（仅在 evidence 非空时显示，学 BTC Pattern 展开块）*/}
+      {evidence.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className={cn(
+            "mt-2.5 w-full text-[11px] flex items-center justify-center gap-1 py-1 border-t transition-colors",
+            isPrimary
+              ? "border-indigo-500/30 text-indigo-300 hover:text-indigo-200"
+              : isNear
+                ? "border-amber-500/20 text-amber-300/80 hover:text-amber-200"
+                : "border-zinc-800/60 text-zinc-500 hover:text-zinc-300",
+          )}
+          aria-expanded={expanded}
+        >
+          <ChevronDown
+            className={cn(
+              "w-3 h-3 transition-transform",
+              expanded && "rotate-180",
+            )}
+          />
+          {expanded ? "收起" : `展开 ${evidence.length} 项指标详情`}
+        </button>
+      )}
+
+      {/* Signature breakdown 详情（点击展开）*/}
+      {expanded && evidence.length > 0 && (
+        <div className="mt-2 space-y-1.5">
+          {evidence.map((e, i) => (
+            <EvidenceRow key={`${e.indicator}-${i}`} evidence={e} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EvidenceRow({ evidence }: { evidence: TreasuryEvidenceItem }) {
+  const config =
+    EVIDENCE_LEVEL_CONFIG[evidence.level] ?? EVIDENCE_LEVEL_CONFIG.none;
+  const Icon = config.icon;
+  const indicatorName = INDICATOR_NAME_MAP.get(evidence.indicator);
+  const contribution = evidence.contribution ?? 0;
+  const weight = evidence.weight ?? 0;
+  const featureValue = evidence.feature_value;
+
+  const formattedFeatureValue = (() => {
+    if (featureValue == null || !Number.isFinite(featureValue)) return "—";
+    if (Math.abs(featureValue) >= 1000) return featureValue.toFixed(0);
+    if (Math.abs(featureValue) >= 10) return featureValue.toFixed(2);
+    return featureValue.toFixed(3);
+  })();
+
+  return (
+    <div className="rounded-md bg-zinc-800/40 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", config.iconColor)} />
+        <span className="text-xs text-zinc-200 font-medium font-mono flex-shrink-0">
+          {evidence.indicator}
+        </span>
+        <span
+          className={cn(
+            "text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0",
+            config.chipClass,
+          )}
+        >
+          {config.label}
+        </span>
+        <span
+          className={cn(
+            "text-[10px] font-mono w-14 text-right ml-auto tabular-nums flex-shrink-0",
+            contribution > 0
+              ? "text-emerald-400"
+              : contribution < 0
+                ? "text-red-400"
+                : "text-zinc-500",
+          )}
+        >
+          {contribution > 0 ? "+" : ""}
+          {contribution.toFixed(2)}
+        </span>
+      </div>
+      <div className="text-[10px] text-zinc-500 ml-5 flex gap-2 items-center">
+        {indicatorName ? (
+          <span className="text-zinc-400 truncate" title={indicatorName}>
+            {indicatorName}
+          </span>
+        ) : (
+          <span className="text-zinc-600">—</span>
+        )}
+        <span className="ml-auto whitespace-nowrap">
+          now:{" "}
+          <span className="text-zinc-300 tabular-nums">
+            {formattedFeatureValue}
+          </span>
+        </span>
+        <span className="whitespace-nowrap">
+          w{" "}
+          <span className="text-zinc-400 tabular-nums">{weight.toFixed(1)}</span>
+        </span>
+      </div>
     </div>
   );
 }
