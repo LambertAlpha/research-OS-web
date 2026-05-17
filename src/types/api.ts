@@ -43,6 +43,8 @@ export interface LiquidityComponentScore {
   label: string;
   value?: number | null;
   category?: string;
+  wow_pct?: number | null;
+  ma_slope_pct?: number | null;
 }
 
 // 流动性模型输出

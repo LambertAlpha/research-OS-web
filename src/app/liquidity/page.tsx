@@ -390,6 +390,42 @@ export default function LiquidityPage() {
                                   </div>
                                   <div className="text-sm text-zinc-400">{comp.label}</div>
                                 </div>
+                                {/* Reserves 双口径：周环比（领先）+ 4W MA 斜率（评分依据，滞后抗噪）*/}
+                                {comp.name === "reserves_trend" &&
+                                  (comp.wow_pct != null || comp.ma_slope_pct != null) && (
+                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+                                      {comp.wow_pct != null && (
+                                        <span>
+                                          周环比{" "}
+                                          <span
+                                            className={
+                                              comp.wow_pct >= 0
+                                                ? "text-emerald-400"
+                                                : "text-red-400"
+                                            }
+                                          >
+                                            {comp.wow_pct >= 0 ? "+" : ""}
+                                            {comp.wow_pct.toFixed(2)}%
+                                          </span>
+                                        </span>
+                                      )}
+                                      {comp.ma_slope_pct != null && (
+                                        <span>
+                                          4W MA 斜率{" "}
+                                          <span
+                                            className={
+                                              comp.ma_slope_pct >= 0
+                                                ? "text-emerald-400"
+                                                : "text-red-400"
+                                            }
+                                          >
+                                            {comp.ma_slope_pct >= 0 ? "+" : ""}
+                                            {comp.ma_slope_pct.toFixed(2)}%/周
+                                          </span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 {/* 子项进度条 */}
                                 <div className="mt-2 bg-zinc-800/60 rounded-full h-1 overflow-hidden">
                                   <div
