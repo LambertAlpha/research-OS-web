@@ -122,6 +122,16 @@ export interface TreasuryAction {
   exit_condition?: string;
 }
 
+// P2-1：美债主敘事 vs 宏观状态的跨模型反向验证结果
+export interface TreasuryMacroCrossCheck {
+  conflict: boolean;
+  reason: string;
+  macro_state: string | null; // 宏观状态码 A/B/C/D/T
+  treasury_narrative: string | null; // 美债主敘事 N-XX
+  treasury_cycle: string | null;
+  checked_at: string;
+}
+
 export interface TreasuryNarrativePayload {
   model: "TreasuryNarrative";
   version: string;
@@ -136,6 +146,7 @@ export interface TreasuryNarrativePayload {
   action: TreasuryAction;
   kelly_multiplier: number;
   transition_to_after_intervention?: NarrativeId[];
+  macro_cross_check?: TreasuryMacroCrossCheck; // P2-1：runner 注入，旧数据可能缺失
 }
 
 export interface TreasuryAlert {

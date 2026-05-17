@@ -13,7 +13,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import apiClient from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { EquityOutput, HistoryRecord } from "@/types/api";
+import type { EquityOutput, HistoryRecord, FundFlowTier } from "@/types/api";
 import { IndicatorDictionary } from "@/components/IndicatorDictionary";
 import dynamic from "next/dynamic";
 const BacktestPanel = dynamic(
@@ -89,6 +89,8 @@ const SUB_INDICATOR_LABELS: Record<string, string> = {
   margin_debt_yoy: "保证金债务 YoY",
   tic_cross_border: "TIC 跨境资金净流入",
   cot_asset_manager: "COT 资管净持仓",
+  cot_leveraged: "COT 杠杆基金净持仓",
+  stock_bond_allocation: "股债配置比例",
   // 市场宽度
   rsp_spy_trend: "RSP/SPY 等权比值",
   sector_count: "板块参与度 (站上200DMA)",
@@ -315,6 +317,58 @@ function SubIndicatorRow({ k, value }: { k: string; value: unknown }) {
           <div className="absolute top-0 left-1/2 w-px h-full bg-zinc-700/60" />
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// FundFlowTiers：资金流模块三层结构（P1-2 — 结构性 15% / 机构 10% / 战术 5%）
+// ============================================================================
+
+const FUND_FLOW_TIER_ORDER = ["structural", "institutional", "tactical"] as const;
+
+function FundFlowTiers({ tiers }: { tiers: Record<string, FundFlowTier> }) {
+  return (
+    <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] space-y-4">
+      {FUND_FLOW_TIER_ORDER.map((tierKey) => {
+        const tier = tiers[tierKey];
+        if (!tier) return null;
+        const indicatorKeys = Object.keys(tier.indicators || {});
+        const tierScoreColor =
+          tier.score > 0 ? "#10b981" : tier.score < 0 ? "#ef4444" : "#71717a";
+        return (
+          <div key={tierKey}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-zinc-300">{tier.label}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">
+                  {tier.weight_pct}%
+                </span>
+              </div>
+              {tier.has_data ? (
+                <span
+                  className="font-mono text-[11px] font-medium tabular-nums"
+                  style={{ color: tierScoreColor }}
+                >
+                  {tier.score > 0 ? "+" : ""}
+                  {tier.score.toFixed(2)}
+                </span>
+              ) : (
+                <span className="text-[10px] text-zinc-600">暂无数据</span>
+              )}
+            </div>
+            {indicatorKeys.length > 0 ? (
+              <div className="space-y-2.5 pl-2 border-l border-zinc-800">
+                {indicatorKeys.map((k) => (
+                  <SubIndicatorRow key={k} k={k} value={tier.indicators[k]} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-[10px] text-zinc-600 pl-2">指标数据待接入</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -640,7 +694,7 @@ export default function EquityPage() {
                   <div className="text-sm text-zinc-400">
                     仓位上限:{" "}
                     <span className="text-zinc-200 font-medium">
-                      {regime.position_cap}%
+                      {(regime.position_cap * 100).toFixed(0)}%
                     </span>
                   </div>
                 )}
@@ -772,8 +826,14 @@ export default function EquityPage() {
                     const triggerKey = MODULE_TRIGGER_KEY[mod.name];
                     const triggerData = triggerKey ? equityOutput?.triggered_rules?.[triggerKey] : null;
                     const subInputs = triggerData?.input_values || {};
+                    const hasFlatSub = Object.keys(subInputs).length > 0;
+                    // P1-2：资金流模块改用三层结构展示（结构性/机构/战术）
+                    const isFundFlowTiered =
+                      mod.name === "fund_flow" &&
+                      !!mod.tiers &&
+                      Object.keys(mod.tiers).length > 0;
                     const isExpanded = expandedModule === "all" || expandedModule === mod.name;
-                    const hasSubData = Object.keys(subInputs).length > 0;
+                    const hasSubData = hasFlatSub || isFundFlowTiered;
 
                     return (
                       <div
@@ -824,8 +884,11 @@ export default function EquityPage() {
                           <div className="absolute top-0 left-1/2 w-px h-full bg-zinc-600" />
                         </div>
 
-                        {/* 展开：子指标详情 */}
-                        {isExpanded && hasSubData && (
+                        {/* 展开：fund_flow 用三层结构，其余模块平铺子指标 */}
+                        {isExpanded && isFundFlowTiered && (
+                          <FundFlowTiers tiers={mod.tiers!} />
+                        )}
+                        {isExpanded && !isFundFlowTiered && hasFlatSub && (
                           <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
                             {Object.entries(subInputs).map(([key, value]) => (
                               <SubIndicatorRow key={key} k={key} value={value} />
