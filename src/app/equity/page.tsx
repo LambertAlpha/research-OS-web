@@ -188,7 +188,7 @@ const SUB_INDICATOR_UNIT: Record<string, SubIndicatorUnit> = {
   fed_funds: "percent",
   yield_curve: "bps",
   real_rate: "percent",
-  credit_spread: "bps",
+  credit_spread: "percent",
 };
 
 function formatNumberByUnit(value: number, unit?: SubIndicatorUnit): string {
