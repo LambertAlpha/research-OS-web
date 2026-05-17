@@ -43,6 +43,8 @@ export interface LiquidityComponentScore {
   label: string;
   value?: number | null;
   category?: string;
+  wow_pct?: number | null;
+  ma_slope_pct?: number | null;
 }
 
 // 流动性模型输出
@@ -260,10 +262,20 @@ export interface Regime {
   position_cap?: number;
 }
 
+// 资金流模块三层结构明细（P1-2：结构性 15% / 机构 10% / 战术 5%）
+export interface FundFlowTier {
+  label: string;
+  weight_pct: number;
+  score: number;
+  has_data: boolean;
+  indicators: Record<string, unknown>;
+}
+
 export interface ModuleScore {
   name: string;
   score: number;
   weight: number;
+  tiers?: Record<string, FundFlowTier>; // 仅 fund_flow 模块有，三层结构明细
 }
 
 export interface Allocation {
@@ -514,6 +526,10 @@ export interface AlertRecord {
   alert_message: string;
   trigger_rule?: string;
   acknowledged: boolean;
+  // P1-4 去重状态机字段（旧 schema 可能缺失，故均为可选）
+  alert_state?: string; // NEW / ONGOING / ESCALATED / RESOLVED
+  last_seen_ts?: string | null;
+  occurrence_count?: number;
 }
 
 // ============================================================================

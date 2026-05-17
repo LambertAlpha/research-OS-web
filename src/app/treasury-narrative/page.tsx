@@ -315,6 +315,7 @@ export default function TreasuryNarrativePage() {
               transition={transition}
               allScoresMap={allScoresMap}
               kelly={payload.kelly_multiplier}
+              macroCrossCheck={payload.macro_cross_check}
             />
 
             {/* ============================================================
@@ -562,14 +563,22 @@ function BannerStack({
   transition,
   allScoresMap,
   kelly,
+  macroCrossCheck,
 }: {
   n13Triggered: boolean;
   n13EarlyWarning: boolean;
   transition: TreasuryNarrativeResponse["treasury"]["transition_window"] | undefined;
   allScoresMap: Map<string, TreasuryNarrativeAllScores>;
   kelly: number;
+  macroCrossCheck: TreasuryNarrativeResponse["treasury"]["macro_cross_check"];
 }) {
-  if (!n13Triggered && !n13EarlyWarning && !transition?.triggered) return null;
+  if (
+    !n13Triggered &&
+    !n13EarlyWarning &&
+    !transition?.triggered &&
+    !macroCrossCheck?.conflict
+  )
+    return null;
 
   return (
     <div className="mb-6 space-y-3">
@@ -599,6 +608,32 @@ function BannerStack({
             </div>
             <div className="text-xs text-zinc-300 mt-1 leading-relaxed">
               单组触发条件命中但未构成主触发，主敘事信心度已降一级。密切监控 Basis Trade / Repo / MOVE。
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 美债↔宏观跨模型冲突（P2-1）：红色，提示人工复核 */}
+      {macroCrossCheck?.conflict && (
+        <div className="rounded-xl p-4 bg-red-500/10 border border-red-500/40 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-300 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-red-300">
+              🔴 宏观信号冲突 — 建议人工复核
+            </div>
+            <div className="text-xs text-zinc-300 mt-1 leading-relaxed">
+              {macroCrossCheck.reason}
+            </div>
+            <div className="text-xs text-zinc-500 mt-2 flex flex-wrap items-center gap-2">
+              <span>宏观模型:</span>
+              <span className="px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-200 font-mono text-[11px]">
+                State {macroCrossCheck.macro_state ?? "—"}
+              </span>
+              <span className="text-zinc-700">vs</span>
+              <span>美债主敘事:</span>
+              <span className="px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-200 font-mono text-[11px]">
+                {macroCrossCheck.treasury_narrative ?? "—"}
+              </span>
             </div>
           </div>
         </div>

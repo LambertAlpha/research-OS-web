@@ -17,6 +17,31 @@ import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import type { ModelOutput, HistoryRecord, AlertRecord } from "@/types/api";
 import { History, Search, AlertTriangle, BarChart3, RefreshCw, Bell } from "lucide-react";
 
+// P1-4：告警状态机展示样式（NEW/ONGOING/ESCALATED/RESOLVED）
+const ALERT_STATE_STYLE: Record<string, { label: string; cls: string }> = {
+  NEW: { label: "新", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  ONGOING: { label: "持续", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  ESCALATED: { label: "升级", cls: "bg-red-500/20 text-red-400 border-red-500/30" },
+  RESOLVED: { label: "已解除", cls: "bg-zinc-600/20 text-zinc-500 border-zinc-600/30" },
+};
+
+// 告警状态徽章（旧 schema 无 alert_state 时不渲染）
+function AlertStateBadge({ state }: { state?: string }) {
+  if (!state) return null;
+  const style = ALERT_STATE_STYLE[state];
+  if (!style) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
+        style.cls
+      )}
+    >
+      {style.label}
+    </span>
+  );
+}
+
 export default function HistoryPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -397,7 +422,8 @@ export default function HistoryPage() {
                         ? "bg-red-500/5 hover:bg-red-500/10"
                         : alert.alert_level === "WARNING"
                           ? "bg-amber-500/5 hover:bg-amber-500/10"
-                          : "hover:bg-[var(--bg-card-hover)]"
+                          : "hover:bg-[var(--bg-card-hover)]",
+                      alert.alert_state === "RESOLVED" && "opacity-50"
                     )}
                   >
                     {/* 时间线指示器 */}
@@ -433,6 +459,15 @@ export default function HistoryPage() {
                         <span className="text-xs text-zinc-500 font-mono">
                           [{alert.alert_type}]
                         </span>
+                        <AlertStateBadge state={alert.alert_state} />
+                        {alert.occurrence_count != null && alert.occurrence_count > 1 && (
+                          <span
+                            className="text-xs text-zinc-500 font-mono"
+                            title="60 分钟去重窗口内合并的重复次数"
+                          >
+                            × {alert.occurrence_count}
+                          </span>
+                        )}
                         <span className="text-xs text-zinc-600 ml-auto shrink-0">
                           {alert.alert_ts ? formatDateTime(alert.alert_ts) : "-"}
                         </span>

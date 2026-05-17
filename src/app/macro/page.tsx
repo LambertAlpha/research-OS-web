@@ -175,6 +175,20 @@ export default function MacroPage() {
     }
   };
 
+  // 纠错档位中文标签（文档 §5.2 三档：A 轻 / B 中 / C 重）
+  const getCorrectionLabel = (level: string) => {
+    switch (level) {
+      case "A":
+        return "轻档（不加仓、改用相对价值）";
+      case "B":
+        return "中档（削减 30% 风险敞口）";
+      case "C":
+        return "重档（清杠杆、上对冲、进入防守）";
+      default:
+        return "";
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Header
@@ -265,7 +279,7 @@ export default function MacroPage() {
               </div>
             )}
 
-            {/* 纠错系统 */}
+            {/* Step 4.5 纠错系统（A/B/C 三档） */}
             {correction && correction.level !== "NONE" && (
               <div className="mb-8">
                 <div
@@ -276,7 +290,7 @@ export default function MacroPage() {
                     borderWidth: 1,
                   }}
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
                     <AlertTriangle
                       className="w-5 h-5"
                       style={{ color: getCorrectionColor(correction.level) }}
@@ -285,12 +299,38 @@ export default function MacroPage() {
                       className="font-semibold"
                       style={{ color: getCorrectionColor(correction.level) }}
                     >
-                      纠错档位: {correction.level}
+                      Step 4.5 纠错系统 · {correction.level} 档
+                    </span>
+                    <span className="text-sm text-zinc-400">
+                      {getCorrectionLabel(correction.level)}
                     </span>
                   </div>
-                  <div className="text-zinc-300 text-sm mb-2">{correction.reason}</div>
+                  {correction.triggered_conditions &&
+                  correction.triggered_conditions.length > 0 ? (
+                    <div className="mb-3">
+                      <div className="text-xs text-zinc-500 mb-1.5">触发条件</div>
+                      <ul className="space-y-1">
+                        {correction.triggered_conditions.map((c, i) => (
+                          <li
+                            key={i}
+                            className="text-sm text-zinc-300 flex items-start gap-1.5"
+                          >
+                            <span style={{ color: getCorrectionColor(correction.level) }}>
+                              ▸
+                            </span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    correction.reason && (
+                      <div className="text-zinc-300 text-sm mb-3">{correction.reason}</div>
+                    )
+                  )}
                   <div className="text-zinc-400 text-sm">
-                    <strong>建议动作:</strong> {correction.suggested_action}
+                    <strong className="text-zinc-300">建议动作:</strong>{" "}
+                    {correction.suggested_action}
                   </div>
                 </div>
               </div>
